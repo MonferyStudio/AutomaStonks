@@ -1,0 +1,10 @@
+[
+  { "id": "saw", "type": "saw", "name": "Saw", "operationType": "cut", "width": 2, "height": 1, "inputSlots": 1, "outputSlots": 1, "color": 16744258, "cost": 50 },
+  { "id": "press", "type": "press", "name": "Press", "operationType": "press", "width": 2, "height": 2, "inputSlots": 1, "outputSlots": 1, "color": 16744258, "cost": 75 },
+  { "id": "furnace", "type": "furnace", "name": "Furnace", "operationType": "cook", "width": 2, "height": 2, "inputSlots": 2, "outputSlots": 1, "color": 16744258, "cost": 100 },
+  { "id": "mixer", "type": "mixer", "name": "Mixer", "operationType": "mix", "width": 1, "height": 1, "inputSlots": 2, "outputSlots": 1, "color": 16744258, "cost": 60 },
+  { "id": "assembler", "type": "assembler", "name": "Assembler", "operationType": "assemble", "width": 2, "height": 2, "inputSlots": 3, "outputSlots": 1, "color": 16744258, "cost": 120 },
+  { "id": "smelter", "type": "smelter", "name": "Smelter", "operationType": "smelt", "width": 2, "height": 2, "inputSlots": 1, "outputSlots": 1, "color": 16744258, "cost": 150 },
+  { "id": "cutter", "type": "cutter", "name": "Cutter", "operationType": "slice", "width": 1, "height": 2, "inputSlots": 1, "outputSlots": 2, "color": 16744258, "cost": 55 },
+  { "id": "extractor", "type": "extractor", "name": "Extractor", "operationType": "extract", "width": 1, "height": 1, "inputSlots": 1, "outputSlots": 1, "color": 16744258, "cost": 40 }
+]

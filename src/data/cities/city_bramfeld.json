@@ -1,0 +1,533 @@
+{
+  "width": 14,
+  "height": 11,
+  "bgColor": "0x162232",
+  "roads": [
+    [
+      4,
+      3
+    ],
+    [
+      5,
+      3
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      7,
+      3
+    ],
+    [
+      8,
+      3
+    ],
+    [
+      4,
+      6
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      6
+    ],
+    [
+      7,
+      6
+    ],
+    [
+      8,
+      6
+    ],
+    [
+      4,
+      4
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      8,
+      4
+    ],
+    [
+      8,
+      5
+    ],
+    [
+      4,
+      7
+    ],
+    [
+      4,
+      8
+    ],
+    [
+      4,
+      9
+    ],
+    [
+      9,
+      3
+    ],
+    [
+      10,
+      3
+    ],
+    [
+      11,
+      3
+    ],
+    [
+      9,
+      6
+    ],
+    [
+      10,
+      6
+    ],
+    [
+      11,
+      6
+    ],
+    [
+      9,
+      7
+    ],
+    [
+      9,
+      8
+    ],
+    [
+      3,
+      4
+    ]
+  ],
+  "factorySlots": [
+    {
+      "position": [
+        2,
+        7
+      ],
+      "polyominoId": "custom_6",
+      "cells": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "cost": 10000
+    },
+    {
+      "position": [
+        10,
+        5
+      ],
+      "polyominoId": "custom_2",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "cost": 100
+    },
+    {
+      "position": [
+        7,
+        7
+      ],
+      "polyominoId": "custom_4",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "cost": 1000
+    }
+  ],
+  "shopSlots": [
+    {
+      "position": [
+        5,
+        7
+      ],
+      "polyominoId": "dom_I",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "cost": 0
+    },
+    {
+      "position": [
+        5,
+        4
+      ],
+      "polyominoId": "dom_I",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "cost": 0
+    },
+    {
+      "position": [
+        2,
+        3
+      ],
+      "polyominoId": "custom_5",
+      "cells": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "cost": 0
+    }
+  ],
+  "storageSlots": [
+    {
+      "position": [
+        9,
+        2
+      ],
+      "polyominoId": "custom_2",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "cost": 75
+    }
+  ],
+  "decorations": [
+    {
+      "type": "house",
+      "position": [
+        2,
+        6
+      ],
+      "polyominoId": "custom_2",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "name": "House",
+      "color": "0x356840"
+    },
+    {
+      "type": "house",
+      "position": [
+        10,
+        7
+      ],
+      "polyominoId": "custom_3",
+      "cells": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "name": "House",
+      "color": "0x356840"
+    },
+    {
+      "type": "house",
+      "position": [
+        9,
+        4
+      ],
+      "polyominoId": "custom_4",
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "name": "House",
+      "color": "0x356840"
+    },
+    {
+      "type": "house",
+      "position": [
+        4,
+        2
+      ],
+      "polyominoId": "custom_3",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "name": "House",
+      "color": "0x356840"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        4,
+        1
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x207c2b"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        6,
+        9
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x1ba690"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        1,
+        6
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x23b543"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        2,
+        1
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x1dc96f"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        2,
+        2
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x21ed7b"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        9,
+        1
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x2b0ca0"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        13,
+        6
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x2ccb1d"
+    },
+    {
+      "type": "decoration",
+      "position": [
+        11,
+        8
+      ],
+      "polyominoId": "mono_1",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "name": "Tree",
+      "color": "0x2be276"
+    },
+    {
+      "type": "house",
+      "position": [
+        5,
+        4
+      ],
+      "polyominoId": "custom_4",
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "name": "House",
+      "color": "0x356840"
+    }
+  ]
+}

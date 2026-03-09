@@ -1,0 +1,86 @@
+[
+  {
+    "id": "cut_log_to_planks",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "wood_log", "quantity": 1 }],
+    "outputs": [{ "resourceId": "plank", "quantity": 2 }],
+    "processingTicks": 15
+  },
+  {
+    "id": "press_log_to_sawdust",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "wood_log", "quantity": 1 }],
+    "outputs": [{ "resourceId": "sawdust", "quantity": 3 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "press_olive_to_oil",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "olive", "quantity": 1 }],
+    "outputs": [{ "resourceId": "olive_oil", "quantity": 1 }],
+    "processingTicks": 15
+  },
+  {
+    "id": "press_tomato_to_sauce",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "tomato", "quantity": 1 }],
+    "outputs": [{ "resourceId": "tomato_sauce", "quantity": 1 }],
+    "processingTicks": 12
+  },
+  {
+    "id": "extract_wheat_to_flour",
+    "machineType": "extract",
+    "inputs": [{ "resourceId": "wheat", "quantity": 1 }],
+    "outputs": [{ "resourceId": "flour", "quantity": 1 }],
+    "processingTicks": 10
+  },
+  {
+    "id": "mix_flour_water_to_dough",
+    "machineType": "mix",
+    "inputs": [{ "resourceId": "flour", "quantity": 1 }, { "resourceId": "water", "quantity": 1 }],
+    "outputs": [{ "resourceId": "dough", "quantity": 1 }],
+    "processingTicks": 12
+  },
+  {
+    "id": "cook_dough_to_bread",
+    "machineType": "cook",
+    "inputs": [{ "resourceId": "dough", "quantity": 1 }],
+    "outputs": [{ "resourceId": "bread", "quantity": 1 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "smelt_iron_ore",
+    "machineType": "smelt",
+    "inputs": [{ "resourceId": "iron_ore", "quantity": 1 }],
+    "outputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
+    "processingTicks": 25
+  },
+  {
+    "id": "press_iron_ingot_to_plate",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
+    "outputs": [{ "resourceId": "iron_plate", "quantity": 1 }],
+    "processingTicks": 18
+  },
+  {
+    "id": "slice_iron_ingot_to_nails",
+    "machineType": "slice",
+    "inputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
+    "outputs": [{ "resourceId": "nail", "quantity": 4 }],
+    "processingTicks": 12
+  },
+  {
+    "id": "assemble_chair",
+    "machineType": "assemble",
+    "inputs": [{ "resourceId": "plank", "quantity": 2 }, { "resourceId": "nail", "quantity": 2 }],
+    "outputs": [{ "resourceId": "chair", "quantity": 1 }],
+    "processingTicks": 30
+  },
+  {
+    "id": "assemble_table",
+    "machineType": "assemble",
+    "inputs": [{ "resourceId": "plank", "quantity": 3 }, { "resourceId": "screw", "quantity": 2 }],
+    "outputs": [{ "resourceId": "table", "quantity": 1 }],
+    "processingTicks": 40
+  }
+]

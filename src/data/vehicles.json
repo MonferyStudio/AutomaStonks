@@ -1,0 +1,49 @@
+[
+  {
+    "id": "truck",
+    "name": "Truck",
+    "scope": "both",
+    "capacity": 10,
+    "speed": 2,
+    "costPerTrip": 3,
+    "purchaseCost": 50,
+    "transportableCategories": ["solid", "bulky"],
+    "color": 16744258
+  },
+  {
+    "id": "train",
+    "name": "Train",
+    "scope": "inter",
+    "capacity": 40,
+    "speed": 2,
+    "costPerTrip": 8,
+    "purchaseCost": 200,
+    "transportableCategories": ["solid", "bulky", "liquid"],
+    "color": 5098998,
+    "requiresRailway": true
+  },
+  {
+    "id": "boat",
+    "name": "Boat",
+    "scope": "inter",
+    "capacity": 60,
+    "speed": 1,
+    "costPerTrip": 5,
+    "purchaseCost": 300,
+    "transportableCategories": ["solid", "bulky", "liquid", "fragile"],
+    "color": 2719929,
+    "requiresPort": true
+  },
+  {
+    "id": "plane",
+    "name": "Plane",
+    "scope": "inter",
+    "capacity": 8,
+    "speed": 5,
+    "costPerTrip": 15,
+    "purchaseCost": 500,
+    "transportableCategories": ["solid", "fragile"],
+    "color": 15263976,
+    "requiresAirport": true
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "q_first_plank",
+    "name": "First Plank",
+    "description": "Produce 1 plank using a Saw",
+    "condition": { "type": "produce", "target": "plank", "amount": 1 },
+    "reward": { "talent": 1, "coins": 20 }
+  },
+  {
+    "id": "q_produce_10_planks",
+    "name": "Woodworker",
+    "description": "Produce 10 planks",
+    "condition": { "type": "produce", "target": "plank", "amount": 10 },
+    "reward": { "talent": 2 }
+  },
+  {
+    "id": "q_first_bread",
+    "name": "Baker's Start",
+    "description": "Produce 1 bread",
+    "condition": { "type": "produce", "target": "bread", "amount": 1 },
+    "reward": { "talent": 2, "coins": 30 }
+  },
+  {
+    "id": "q_discover_3",
+    "name": "Experimenter",
+    "description": "Discover 3 recipes",
+    "condition": { "type": "discover", "amount": 3 },
+    "reward": { "talent": 2 }
+  },
+  {
+    "id": "q_discover_6",
+    "name": "Scientist",
+    "description": "Discover 6 recipes",
+    "condition": { "type": "discover", "amount": 6 },
+    "reward": { "talent": 3 }
+  },
+  {
+    "id": "q_earn_200",
+    "name": "First Profits",
+    "description": "Earn 200 coins from sales",
+    "condition": { "type": "earn", "amount": 200 },
+    "reward": { "talent": 2 }
+  },
+  {
+    "id": "q_earn_1000",
+    "name": "Entrepreneur",
+    "description": "Earn 1000 coins from sales",
+    "condition": { "type": "earn", "amount": 1000 },
+    "reward": { "talent": 5 }
+  },
+  {
+    "id": "q_first_chair",
+    "name": "Furniture Maker",
+    "description": "Produce 1 chair",
+    "condition": { "type": "produce", "target": "chair", "amount": 1 },
+    "reward": { "talent": 3, "coins": 50 }
+  },
+  {
+    "id": "q_smelt_iron",
+    "name": "Metalworker",
+    "description": "Produce 5 iron ingots",
+    "condition": { "type": "produce", "target": "iron_ingot", "amount": 5 },
+    "reward": { "talent": 2 }
+  },
+  {
+    "id": "q_sell_10",
+    "name": "Merchant",
+    "description": "Sell 10 items to shops",
+    "condition": { "type": "sell", "amount": 10 },
+    "reward": { "talent": 2 }
+  }
+]

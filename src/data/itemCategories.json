@@ -1,0 +1,6 @@
+[
+  { "id": "solid", "name": "Solid", "description": "Standard solid items, transportable by all vehicles" },
+  { "id": "liquid", "name": "Liquid", "description": "Liquids require tanker vehicles (truck-tanker, train-tanker, boat)" },
+  { "id": "fragile", "name": "Fragile", "description": "Fragile items require careful handling (truck slow, plane)" },
+  { "id": "bulky", "name": "Bulky", "description": "Large items cannot be transported by plane" }
+]

@@ -1,0 +1,524 @@
+{
+  "width": 4000,
+  "height": 2800,
+  "cities": [
+    {
+      "id": "city_bramfeld",
+      "name": "Bramfeld",
+      "typeId": "agricultural",
+      "x": 2000,
+      "y": 1400,
+      "unlockCost": 0
+    },
+    {
+      "id": "city_ferrath",
+      "name": "Ferrath",
+      "typeId": "industrial",
+      "x": 1700,
+      "y": 1100,
+      "unlockCost": 1
+    },
+    {
+      "id": "city_sylvange",
+      "name": "Sylvange",
+      "typeId": "forest",
+      "x": 2300,
+      "y": 1150,
+      "unlockCost": 1
+    },
+    {
+      "id": "city_solane",
+      "name": "Solane",
+      "typeId": "agricultural",
+      "x": 2250,
+      "y": 1650,
+      "unlockCost": 1
+    },
+    {
+      "id": "city_klintholm",
+      "name": "Klintholm",
+      "typeId": "industrial",
+      "x": 1750,
+      "y": 1650,
+      "unlockCost": 1
+    },
+    {
+      "id": "city_grauwacht",
+      "name": "Grauwacht",
+      "typeId": "mining",
+      "x": 1230,
+      "y": 850,
+      "unlockCost": 2
+    },
+    {
+      "id": "city_marebourg",
+      "name": "Marebourg",
+      "typeId": "coastal",
+      "x": 2650,
+      "y": 950,
+      "unlockCost": 2
+    },
+    {
+      "id": "city_dorveil",
+      "name": "Dorveil",
+      "typeId": "agricultural",
+      "x": 2600,
+      "y": 1450,
+      "unlockCost": 2
+    },
+    {
+      "id": "city_schachtberg",
+      "name": "Schachtberg",
+      "typeId": "mining",
+      "x": 1308,
+      "y": 1542,
+      "unlockCost": 2
+    },
+    {
+      "id": "city_tannevald",
+      "name": "Tannevald",
+      "typeId": "forest",
+      "x": 2000,
+      "y": 1900,
+      "unlockCost": 2
+    },
+    {
+      "id": "city_duncarrig",
+      "name": "Duncarrig",
+      "typeId": "mining",
+      "x": 1050,
+      "y": 650,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_saltwick",
+      "name": "Saltwick",
+      "typeId": "coastal",
+      "x": 2950,
+      "y": 750,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_varnskog",
+      "name": "Varnskog",
+      "typeId": "forest",
+      "x": 2900,
+      "y": 1250,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_ondamar",
+      "name": "Ondamar",
+      "typeId": "coastal",
+      "x": 2950,
+      "y": 1700,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_eisental",
+      "name": "Eisental",
+      "typeId": "industrial",
+      "x": 1050,
+      "y": 1250,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_kupfertal",
+      "name": "Kupfertal",
+      "typeId": "mining",
+      "x": 1104,
+      "y": 1879,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_mirova",
+      "name": "Mirova",
+      "typeId": "coastal",
+      "x": 1500,
+      "y": 2600,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_aubeplaine",
+      "name": "Aubeplaine",
+      "typeId": "agricultural",
+      "x": 2500,
+      "y": 2050,
+      "unlockCost": 3
+    },
+    {
+      "id": "city_kalstadt",
+      "name": "Kalstadt",
+      "typeId": "metropolis",
+      "x": 2000,
+      "y": 750,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_tornskall",
+      "name": "Tornskall",
+      "typeId": "mining",
+      "x": 1450,
+      "y": 500,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_nordhagen",
+      "name": "Nordhagen",
+      "typeId": "industrial",
+      "x": 1850,
+      "y": 400,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_hautbois",
+      "name": "Hautbois",
+      "typeId": "forest",
+      "x": 2400,
+      "y": 500,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_vastoria",
+      "name": "Vastoria",
+      "typeId": "metropolis",
+      "x": 750,
+      "y": 550,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_korallvik",
+      "name": "Korallvik",
+      "typeId": "coastal",
+      "x": 3620,
+      "y": 847,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_grimspitz",
+      "name": "Grimspitz",
+      "typeId": "mining",
+      "x": 727,
+      "y": 945,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_azurande",
+      "name": "Azurande",
+      "typeId": "coastal",
+      "x": 3710,
+      "y": 1600,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_mousberg",
+      "name": "Mousberg",
+      "typeId": "forest",
+      "x": 750,
+      "y": 1550,
+      "unlockCost": 4
+    },
+    {
+      "id": "city_novapoli",
+      "name": "Novapoli",
+      "typeId": "metropolis",
+      "x": 2000,
+      "y": 2350,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_seiglane",
+      "name": "Seiglane",
+      "typeId": "agricultural",
+      "x": 3400,
+      "y": 550,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_frostvik",
+      "name": "Frostvik",
+      "typeId": "mining",
+      "x": 581,
+      "y": 2124,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_pelagos",
+      "name": "Pelagos",
+      "typeId": "coastal",
+      "x": 3670,
+      "y": 2000,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_chenaie",
+      "name": "Chenaie",
+      "typeId": "forest",
+      "x": 1200,
+      "y": 2350,
+      "unlockCost": 5
+    },
+    {
+      "id": "city_sablegris",
+      "name": "Sablegris",
+      "typeId": "coastal",
+      "x": 2800,
+      "y": 2530,
+      "unlockCost": 5
+    }
+  ],
+  "connections": [
+    {
+      "from": "city_bramfeld",
+      "to": "city_ferrath"
+    },
+    {
+      "from": "city_bramfeld",
+      "to": "city_sylvange"
+    },
+    {
+      "from": "city_bramfeld",
+      "to": "city_solane"
+    },
+    {
+      "from": "city_bramfeld",
+      "to": "city_klintholm"
+    },
+    {
+      "from": "city_ferrath",
+      "to": "city_grauwacht"
+    },
+    {
+      "from": "city_ferrath",
+      "to": "city_kalstadt"
+    },
+    {
+      "from": "city_sylvange",
+      "to": "city_kalstadt"
+    },
+    {
+      "from": "city_sylvange",
+      "to": "city_marebourg"
+    },
+    {
+      "from": "city_sylvange",
+      "to": "city_dorveil"
+    },
+    {
+      "from": "city_solane",
+      "to": "city_dorveil"
+    },
+    {
+      "from": "city_solane",
+      "to": "city_tannevald"
+    },
+    {
+      "from": "city_solane",
+      "to": "city_aubeplaine"
+    },
+    {
+      "from": "city_klintholm",
+      "to": "city_schachtberg"
+    },
+    {
+      "from": "city_klintholm",
+      "to": "city_tannevald"
+    },
+    {
+      "from": "city_klintholm",
+      "to": "city_mirova"
+    },
+    {
+      "from": "city_grauwacht",
+      "to": "city_duncarrig"
+    },
+    {
+      "from": "city_grauwacht",
+      "to": "city_eisental"
+    },
+    {
+      "from": "city_marebourg",
+      "to": "city_saltwick"
+    },
+    {
+      "from": "city_marebourg",
+      "to": "city_varnskog"
+    },
+    {
+      "from": "city_dorveil",
+      "to": "city_varnskog"
+    },
+    {
+      "from": "city_dorveil",
+      "to": "city_ondamar"
+    },
+    {
+      "from": "city_schachtberg",
+      "to": "city_eisental"
+    },
+    {
+      "from": "city_schachtberg",
+      "to": "city_kupfertal"
+    },
+    {
+      "from": "city_tannevald",
+      "to": "city_mirova"
+    },
+    {
+      "from": "city_tannevald",
+      "to": "city_aubeplaine"
+    },
+    {
+      "from": "city_tannevald",
+      "to": "city_novapoli"
+    },
+    {
+      "from": "city_duncarrig",
+      "to": "city_vastoria"
+    },
+    {
+      "from": "city_duncarrig",
+      "to": "city_tornskall"
+    },
+    {
+      "from": "city_duncarrig",
+      "to": "city_grimspitz"
+    },
+    {
+      "from": "city_tornskall",
+      "to": "city_kalstadt"
+    },
+    {
+      "from": "city_tornskall",
+      "to": "city_nordhagen"
+    },
+    {
+      "from": "city_nordhagen",
+      "to": "city_kalstadt"
+    },
+    {
+      "from": "city_hautbois",
+      "to": "city_kalstadt"
+    },
+    {
+      "from": "city_hautbois",
+      "to": "city_saltwick"
+    },
+    {
+      "from": "city_eisental",
+      "to": "city_grimspitz"
+    },
+    {
+      "from": "city_eisental",
+      "to": "city_mousberg"
+    },
+    {
+      "from": "city_saltwick",
+      "to": "city_korallvik"
+    },
+    {
+      "from": "city_saltwick",
+      "to": "city_seiglane"
+    },
+    {
+      "from": "city_varnskog",
+      "to": "city_korallvik"
+    },
+    {
+      "from": "city_varnskog",
+      "to": "city_ondamar"
+    },
+    {
+      "from": "city_varnskog",
+      "to": "city_azurande"
+    },
+    {
+      "from": "city_ondamar",
+      "to": "city_azurande"
+    },
+    {
+      "from": "city_ondamar",
+      "to": "city_pelagos"
+    },
+    {
+      "from": "city_kupfertal",
+      "to": "city_mousberg"
+    },
+    {
+      "from": "city_kupfertal",
+      "to": "city_frostvik"
+    },
+    {
+      "from": "city_mirova",
+      "to": "city_chenaie"
+    },
+    {
+      "from": "city_mirova",
+      "to": "city_novapoli"
+    },
+    {
+      "from": "city_aubeplaine",
+      "to": "city_sablegris"
+    },
+    {
+      "from": "city_aubeplaine",
+      "to": "city_novapoli"
+    },
+    {
+      "from": "city_korallvik",
+      "to": "city_azurande"
+    },
+    {
+      "from": "city_korallvik",
+      "to": "city_seiglane"
+    },
+    {
+      "from": "city_azurande",
+      "to": "city_pelagos"
+    },
+    {
+      "from": "city_mousberg",
+      "to": "city_frostvik"
+    },
+    {
+      "from": "city_chenaie",
+      "to": "city_frostvik"
+    },
+    {
+      "from": "city_chenaie",
+      "to": "city_novapoli"
+    },
+    {
+      "from": "city_sablegris",
+      "to": "city_pelagos"
+    },
+    {
+      "from": "city_sablegris",
+      "to": "city_novapoli"
+    },
+    {
+      "from": "city_grimspitz",
+      "to": "city_mousberg"
+    },
+    {
+      "from": "city_grimspitz",
+      "to": "city_vastoria"
+    },
+    {
+      "from": "city_bramfeld",
+      "to": "city_dorveil"
+    },
+    {
+      "from": "city_nordhagen",
+      "to": "city_hautbois"
+    },
+    {
+      "from": "city_aubeplaine",
+      "to": "city_ondamar"
+    },
+    {
+      "from": "city_schachtberg",
+      "to": "city_ferrath"
+    }
+  ]
+}

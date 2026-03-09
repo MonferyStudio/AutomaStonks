@@ -1,0 +1,92 @@
+[
+  {
+    "id": "t_wood_recipes",
+    "name": "Wood Mastery",
+    "description": "Unlock advanced wood recipes",
+    "cost": 2,
+    "branch": "production",
+    "prerequisites": [],
+    "effects": [{ "type": "unlock_recipe_pack", "target": "wood", "value": 1 }]
+  },
+  {
+    "id": "t_food_recipes",
+    "name": "Food Processing",
+    "description": "Unlock food processing recipes",
+    "cost": 2,
+    "branch": "production",
+    "prerequisites": [],
+    "effects": [{ "type": "unlock_recipe_pack", "target": "food", "value": 1 }]
+  },
+  {
+    "id": "t_metal_recipes",
+    "name": "Metallurgy",
+    "description": "Unlock metal working recipes",
+    "cost": 3,
+    "branch": "production",
+    "prerequisites": [],
+    "effects": [{ "type": "unlock_recipe_pack", "target": "metal", "value": 1 }]
+  },
+  {
+    "id": "t_sell_food_bonus",
+    "name": "Food Market",
+    "description": "+15% food sell price",
+    "cost": 2,
+    "branch": "commerce",
+    "prerequisites": ["t_food_recipes"],
+    "effects": [{ "type": "sell_bonus", "target": "food", "value": 15 }]
+  },
+  {
+    "id": "t_sell_wood_bonus",
+    "name": "Timber Trade",
+    "description": "+15% wood product sell price",
+    "cost": 2,
+    "branch": "commerce",
+    "prerequisites": ["t_wood_recipes"],
+    "effects": [{ "type": "sell_bonus", "target": "wood", "value": 15 }]
+  },
+  {
+    "id": "t_belt_tier2",
+    "name": "Fast Belts",
+    "description": "Unlock Tier 2 belts (2x speed)",
+    "cost": 3,
+    "branch": "logistics",
+    "prerequisites": [],
+    "effects": [{ "type": "belt_speed", "value": 2 }]
+  },
+  {
+    "id": "t_belt_tier3",
+    "name": "Express Belts",
+    "description": "Unlock Tier 3 belts (4x speed)",
+    "cost": 5,
+    "branch": "logistics",
+    "prerequisites": ["t_belt_tier2"],
+    "effects": [{ "type": "belt_speed", "value": 3 }]
+  },
+  {
+    "id": "t_extra_io",
+    "name": "Extra I/O Ports",
+    "description": "+2 I/O port slots per factory",
+    "cost": 3,
+    "branch": "logistics",
+    "prerequisites": [],
+    "effects": [{ "type": "io_slots", "value": 2 }]
+  },
+  {
+    "id": "t_cost_reduction",
+    "name": "Bulk Purchasing",
+    "description": "-10% market prices",
+    "cost": 3,
+    "branch": "economy",
+    "prerequisites": [],
+    "effects": [{ "type": "cost_reduction", "value": 10 }]
+  },
+  {
+    "id": "t_larger_factories",
+    "name": "Industrial Scale",
+    "description": "Allow larger factory polyominos",
+    "cost": 4,
+    "branch": "economy",
+    "prerequisites": [],
+    "effects": [{ "type": "factory_size", "value": 1 }]
+  }
+]

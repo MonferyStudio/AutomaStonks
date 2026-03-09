@@ -1,0 +1,22 @@
+[
+  { "id": "wood_log", "name": "Wood Log", "color": 5526612, "shape": "square", "category": "solid", "basePrice": 5, "sellPrice": 3, "tier": 0 },
+  { "id": "plank", "name": "Plank", "color": 14729540, "shape": "rect", "category": "solid", "basePrice": 12, "sellPrice": 8, "tier": 1 },
+  { "id": "sawdust", "name": "Sawdust", "color": 13808724, "shape": "circle", "category": "solid", "basePrice": 2, "sellPrice": 1, "tier": 1 },
+  { "id": "nail", "name": "Nail", "color": 8421504, "shape": "rect", "category": "solid", "basePrice": 8, "sellPrice": 5, "tier": 1 },
+  { "id": "screw", "name": "Screw", "color": 9868950, "shape": "rect", "category": "solid", "basePrice": 10, "sellPrice": 7, "tier": 1 },
+  { "id": "chair", "name": "Chair", "color": 11689260, "shape": "square", "category": "bulky", "basePrice": 0, "sellPrice": 45, "tier": 2 },
+  { "id": "table", "name": "Table", "color": 9786436, "shape": "square", "category": "bulky", "basePrice": 0, "sellPrice": 65, "tier": 2 },
+  { "id": "wheat", "name": "Wheat", "color": 14729283, "shape": "circle", "category": "solid", "basePrice": 4, "sellPrice": 2, "tier": 0 },
+  { "id": "flour", "name": "Flour", "color": 15790320, "shape": "circle", "category": "solid", "basePrice": 10, "sellPrice": 6, "tier": 1 },
+  { "id": "water", "name": "Water", "color": 5025535, "shape": "circle", "category": "liquid", "basePrice": 2, "sellPrice": 1, "tier": 0 },
+  { "id": "dough", "name": "Dough", "color": 15786836, "shape": "circle", "category": "solid", "basePrice": 0, "sellPrice": 12, "tier": 1 },
+  { "id": "bread", "name": "Bread", "color": 14514740, "shape": "square", "category": "solid", "basePrice": 0, "sellPrice": 25, "tier": 2 },
+  { "id": "tomato", "name": "Tomato", "color": 14828838, "shape": "circle", "category": "fragile", "basePrice": 6, "sellPrice": 4, "tier": 0 },
+  { "id": "tomato_sauce", "name": "Tomato Sauce", "color": 13382400, "shape": "circle", "category": "liquid", "basePrice": 0, "sellPrice": 15, "tier": 1 },
+  { "id": "iron_ore", "name": "Iron Ore", "color": 7829367, "shape": "square", "category": "solid", "basePrice": 8, "sellPrice": 5, "tier": 0 },
+  { "id": "iron_ingot", "name": "Iron Ingot", "color": 10066329, "shape": "rect", "category": "solid", "basePrice": 20, "sellPrice": 14, "tier": 1 },
+  { "id": "iron_plate", "name": "Iron Plate", "color": 11184810, "shape": "rect", "category": "solid", "basePrice": 0, "sellPrice": 22, "tier": 2 },
+  { "id": "olive", "name": "Olive", "color": 5600064, "shape": "circle", "category": "solid", "basePrice": 7, "sellPrice": 4, "tier": 0 },
+  { "id": "olive_oil", "name": "Olive Oil", "color": 11184640, "shape": "circle", "category": "liquid", "basePrice": 0, "sellPrice": 18, "tier": 1 },
+  { "id": "dust", "name": "Dust", "color": 8950436, "shape": "cloud", "category": "solid", "basePrice": 0, "sellPrice": 1, "tier": 0 }
+]
