@@ -1,5 +1,6 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { COLORS } from '@/utils/Constants';
+import { CURRENCY_SYMBOLS, getCurrencySymbol, setCurrencySymbol, type CurrencySymbol } from '@/utils/currency';
 
 const SEPARATOR_COLOR = 0x2d3548;
 
@@ -111,6 +112,10 @@ export class DropdownMenu {
 
     y = this.addSeparator(y, w);
 
+    y = this.addCurrencyItem(y, w);
+
+    y = this.addSeparator(y, w);
+
     y = this.addItem('Reset Save', y, w, () => {
       this.close();
       this.callbacks.onResetSave();
@@ -140,7 +145,7 @@ export class DropdownMenu {
     const text = new Text({
       text: label,
       style: new TextStyle({
-        fontFamily: 'Space Mono, Consolas, monospace',
+        fontFamily: 'Inter, sans-serif',
         fontSize: 11,
         fontWeight: '600',
         fill: danger ? COLORS.ACCENT_RED : COLORS.TEXT_PRIMARY,
@@ -164,6 +169,52 @@ export class DropdownMenu {
       rowBg.fill({ color: 0x000000, alpha: 0 });
     });
     row.on('pointertap', onClick);
+
+    this.panel.addChild(row);
+    return y + 30;
+  }
+
+  private addCurrencyItem(y: number, w: number): number {
+    const row = new Container();
+    const rowBg = new Graphics();
+    rowBg.roundRect(4, 0, w - 8, 28, 4);
+    rowBg.fill({ color: 0x000000, alpha: 0 });
+    row.addChild(rowBg);
+
+    const labelText = new Text({
+      text: `Currency: ${getCurrencySymbol()}`,
+      style: new TextStyle({
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 11,
+        fontWeight: '600',
+        fill: COLORS.ACCENT_YELLOW,
+      }),
+    });
+    labelText.position.set(14, 7);
+    row.addChild(labelText);
+
+    row.position.set(0, y);
+    row.eventMode = 'static';
+    row.cursor = 'pointer';
+
+    row.on('pointerover', () => {
+      rowBg.clear();
+      rowBg.roundRect(4, 0, w - 8, 28, 4);
+      rowBg.fill({ color: COLORS.BG_CARD, alpha: 0.8 });
+    });
+    row.on('pointerout', () => {
+      rowBg.clear();
+      rowBg.roundRect(4, 0, w - 8, 28, 4);
+      rowBg.fill({ color: 0x000000, alpha: 0 });
+    });
+    row.on('pointertap', () => {
+      const symbols = CURRENCY_SYMBOLS;
+      const current = getCurrencySymbol();
+      const idx = symbols.indexOf(current);
+      const next = symbols[(idx + 1) % symbols.length];
+      setCurrencySymbol(next);
+      labelText.text = `Currency: ${next}`;
+    });
 
     this.panel.addChild(row);
     return y + 30;

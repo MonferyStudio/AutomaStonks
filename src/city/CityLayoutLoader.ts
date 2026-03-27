@@ -1,6 +1,6 @@
 import type { CityTypeDefinition } from '@/world/CityType';
 import type { PolyominoRegistry } from '@/simulation/PolyominoRegistry';
-import { CityGenerator, type CityLayout } from './CityGenerator';
+import type { CityLayout } from './CityLayoutData';
 import {
   deserializeCityLayout,
   parseBgColor,
@@ -32,17 +32,18 @@ export interface LoadedCity {
 }
 
 /**
- * Load a city layout: from JSON if available, otherwise generate procedurally.
+ * Load a city layout from its JSON data file.
+ * Cities must be pre-built with Tiled/Aseprite and stored as JSON.
  */
 export function loadCityLayout(
   cityId: string,
-  cityType: CityTypeDefinition,
-  polyRegistry: PolyominoRegistry,
-  seed?: number,
-  unlockCost: number = 0,
-  forceGenerate: boolean = false,
+  _cityType: CityTypeDefinition,
+  _polyRegistry: PolyominoRegistry,
+  _seed?: number,
+  _unlockCost: number = 0,
+  _forceGenerate: boolean = false,
 ): LoadedCity {
-  const data = forceGenerate ? undefined : cityDataCache.get(cityId);
+  const data = cityDataCache.get(cityId);
 
   if (data) {
     const layout = deserializeCityLayout(data);
@@ -50,10 +51,7 @@ export function loadCityLayout(
     return { layout, bgColor, fromJson: true };
   }
 
-  // Fallback: procedural generation
-  const generator = new CityGenerator(polyRegistry);
-  const layout = generator.generate(cityType, seed, unlockCost);
-  return { layout, bgColor: undefined, fromJson: false };
+  throw new Error(`[CityLayoutLoader] No JSON layout found for city "${cityId}". Create one with Tiled/Aseprite first.`);
 }
 
 /** Check if a city has a JSON layout file */

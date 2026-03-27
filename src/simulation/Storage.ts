@@ -1,5 +1,6 @@
 import type { ITickable } from '@/interfaces/ITickable';
 import type { Market } from '@/economy/Market';
+import type { ResourceRegistry } from './Resource';
 import { eventBus } from '@/core/EventBus';
 
 let nextStorageId = 0;
@@ -9,47 +10,46 @@ export interface StockOrder {
   targetQuantity: number;
 }
 
-/** Cost multiplier per upgrade level: level 1 = 5000, level 2 = 15000, etc. */
-const UPGRADE_COSTS = [5000, 15000, 40000, 100000, 250000];
+const BASE_UPGRADE_COST = 2000;
 const CAPACITY_PER_CELL = 1000;
+const CAPACITY_PER_UPGRADE = 5;
 
 export class Storage implements ITickable {
   readonly id: string;
   sleeping: boolean = false;
 
   readonly cellCount: number;
-  private _upgradeLevel: number = 0; // 0 = base, max = UPGRADE_COSTS.length
+  private _upgradeLevel: number = 0; // 0 = base, infinite upgrades
   private inventory = new Map<string, number>();
   private stockOrders: StockOrder[] = [];
   private market: Market | null = null;
+  private resourceRegistry: ResourceRegistry | null = null;
 
   constructor(cellCount: number = 1) {
     this.id = `storage_${nextStorageId++}`;
     this.cellCount = cellCount;
   }
 
+  setResourceRegistry(registry: ResourceRegistry): void {
+    this.resourceRegistry = registry;
+  }
+
   get maxCapacity(): number {
-    return this.cellCount * CAPACITY_PER_CELL * (1 + this._upgradeLevel);
+    return this.cellCount * CAPACITY_PER_CELL + this._upgradeLevel * CAPACITY_PER_UPGRADE;
   }
 
   get upgradeLevel(): number {
     return this._upgradeLevel;
   }
 
-  get maxUpgradeLevel(): number {
-    return UPGRADE_COSTS.length;
+  /** Returns the cost to upgrade to the next level (infinite upgrades, scaling cost). */
+  getUpgradeCost(): number {
+    return Math.round(BASE_UPGRADE_COST * Math.pow(1.15, this._upgradeLevel));
   }
 
-  /** Returns the cost to upgrade to the next level, or null if max. */
-  getUpgradeCost(): number | null {
-    if (this._upgradeLevel >= UPGRADE_COSTS.length) return null;
-    return UPGRADE_COSTS[this._upgradeLevel];
-  }
-
-  /** Attempt to upgrade capacity. Returns true if successful. */
+  /** Attempt to upgrade capacity (+5). Returns true if successful. */
   upgrade(wallet: { spendCoins(amount: number): boolean }): boolean {
     const cost = this.getUpgradeCost();
-    if (cost === null) return false;
     if (!wallet.spendCoins(cost)) return false;
     this._upgradeLevel++;
     eventBus.emit('StorageUpdated', { storageId: this.id });
@@ -62,14 +62,23 @@ export class Storage implements ITickable {
 
   // --- Inventory ---
 
+  /** Returns total weighted space used in this storage. */
   get totalUsed(): number {
     let total = 0;
-    for (const qty of this.inventory.values()) total += qty;
+    for (const [resId, qty] of this.inventory) {
+      total += qty * this.getWeight(resId);
+    }
     return total;
   }
 
   get remainingCapacity(): number {
     return this.maxCapacity - this.totalUsed;
+  }
+
+  /** Returns the storageWeight for a resource (defaults to 1 if registry unavailable). */
+  private getWeight(resourceId: string): number {
+    const def = this.resourceRegistry?.get(resourceId);
+    return def?.storageWeight ?? 1;
   }
 
   getStock(resourceId: string): number {
@@ -81,7 +90,8 @@ export class Storage implements ITickable {
   }
 
   deposit(resourceId: string, quantity: number): number {
-    const canFit = Math.min(quantity, this.remainingCapacity);
+    const weight = this.getWeight(resourceId);
+    const canFit = Math.min(quantity, Math.floor(this.remainingCapacity / weight));
     if (canFit <= 0) return 0;
     this.inventory.set(resourceId, this.getStock(resourceId) + canFit);
     return canFit;

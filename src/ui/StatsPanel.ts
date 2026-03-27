@@ -1,10 +1,10 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import { formatNumber } from '@/utils/formatNumber';
 import { eventBus } from '@/core/EventBus';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 12,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -12,13 +12,13 @@ const TITLE_STYLE = new TextStyle({
 });
 
 const LABEL_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 9,
   fill: COLORS.TEXT_DIM,
 });
 
 const VALUE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_MONO,
   fontSize: 10,
   fontWeight: '600',
   fill: COLORS.TEXT_PRIMARY,

@@ -3,16 +3,15 @@ import { Direction, ALL_DIRECTIONS, directionToVector, oppositeDirection, rotate
 import type { Factory } from '@/simulation/Factory';
 import { Belt } from '@/simulation/Belt';
 import { TunnelEntry, TunnelExit } from '@/simulation/Tunnel';
-import { Splitter } from '@/simulation/Splitter';
+import { Exchanger } from '@/simulation/Exchanger';
+import { Machine, type MachineDefinition } from '@/simulation/Machine';
 import { IOPort } from './IOPort';
 import { CommandHistory } from '@/core/CommandHistory';
 import type { ICommand } from '@/interfaces/ICommand';
-import type { RecipeRegistry } from '@/simulation/RecipeRegistry';
-import type { RecipeBook } from '@/simulation/RecipeBook';
 import { CELL_SIZE_PX, TUNNEL_TIERS } from '@/utils/Constants';
 import { isRoadCell, getRoadCellInwardDirection } from '@/simulation/FactoryBorderContext';
 
-export type PlacementTool = 'belt' | 'tunnel' | 'splitter' | 'delete' | 'entry' | 'exit' | 'select' | 'none';
+export type PlacementTool = 'belt' | 'tunnel' | 'exchanger' | 'machine' | 'delete' | 'entry' | 'exit' | 'select' | 'none';
 
 export class PlacementSystem {
   private factory: Factory;
@@ -21,8 +20,21 @@ export class PlacementSystem {
   currentTool: PlacementTool = 'none';
   currentBeltTier: number = 1;
 
+  /** Currently selected machine definition for 'machine' tool */
+  currentMachineDef: MachineDefinition | null = null;
+  /** Current machine rotation (0-3) */
+  machineRotation: number = 0;
+  /** Factory function to create Machine instances (injected by Game) */
+  machineFactory: ((def: MachineDefinition, pos: Vector2) => Machine) | null = null;
+
   private ghostPosition: Vector2 | null = null;
   private isValid = false;
+  private _lastRejection = '';
+
+  /** Callback fired when placement is invalid, with a reason string */
+  onPlacementRejected: ((reason: string) => void) | null = null;
+  /** Callback fired when an entity is deleted. Receives the entity and its grid position. */
+  onEntityDeleted: ((entity: import('@/interfaces/IGridPlaceable').IGridPlaceable, pos: Vector2) => void) | null = null;
 
   // Drag-paint state
   private isDragging = false;
@@ -30,16 +42,13 @@ export class PlacementSystem {
   private lastDragCell: Vector2 | null = null;
   private lastDragDirection: Direction = Direction.Right;
   private justFinishedDrag = false;
+  /** Number of NEW belts placed during the current drag (excludes reorients) */
+  private _dragBeltsPlaced = 0;
 
   // Tunnel two-step state
   private pendingTunnelEntry: TunnelEntry | null = null;
 
-  constructor(
-    factory: Factory,
-    commandHistory: CommandHistory,
-    _recipeRegistry: RecipeRegistry,
-    _recipeBook: RecipeBook,
-  ) {
+  constructor(factory: Factory, commandHistory: CommandHistory) {
     this.factory = factory;
     this.commandHistory = commandHistory;
   }
@@ -56,11 +65,20 @@ export class PlacementSystem {
 
   /** Rotate the current placement direction CW */
   rotateDirection(): void {
-    this.lastDragDirection = rotateDirectionCW(this.lastDragDirection);
+    if (this.currentTool === 'machine') {
+      this.machineRotation = (this.machineRotation + 1) % 4;
+    } else {
+      this.lastDragDirection = rotateDirectionCW(this.lastDragDirection);
+    }
   }
 
   get lastDirection(): Direction {
     return this.lastDragDirection;
+  }
+
+  /** Number of new belts placed during the last drag (reset on next startDrag) */
+  get dragBeltsPlaced(): number {
+    return this._dragBeltsPlaced;
   }
 
   /** Whether we're waiting for the tunnel exit placement */
@@ -103,9 +121,13 @@ export class PlacementSystem {
         }
         break;
       }
-      case 'splitter': {
-        const splitter = new Splitter(pos, this.lastDragDirection, 1);
+      case 'exchanger': {
+        const splitter = new Exchanger(pos, this.lastDragDirection, 1);
         this.isValid = splitter.canPlaceAt(this.factory.grid, pos);
+        break;
+      }
+      case 'machine': {
+        this.isValid = this.isValidMachinePlacement(pos);
         break;
       }
       case 'entry':
@@ -153,6 +175,38 @@ export class PlacementSystem {
     return distance >= 2 && distance <= maxRange;
   }
 
+  private getEffectiveMachineSize(): { w: number; h: number } {
+    const def = this.currentMachineDef;
+    if (!def) return { w: 1, h: 1 };
+    return this.machineRotation % 2 === 0
+      ? { w: def.width, h: def.height }
+      : { w: def.height, h: def.width };
+  }
+
+  private isValidMachinePlacement(pos: Vector2): boolean {
+    if (!this.currentMachineDef) return false;
+    const { w, h } = this.getEffectiveMachineSize();
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        const cell = new Vector2(pos.x + dx, pos.y + dy);
+        if (!this.factory.grid.isInBounds(cell) || this.factory.grid.isOccupied(cell)) return false;
+      }
+    }
+    return true;
+  }
+
+  /** Get the cells the current machine tool would occupy at the given position */
+  getMachineCells(pos: Vector2): Vector2[] {
+    const { w, h } = this.getEffectiveMachineSize();
+    const cells: Vector2[] = [];
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        cells.push(new Vector2(pos.x + dx, pos.y + dy));
+      }
+    }
+    return cells;
+  }
+
   // --- Drag Paint ---
 
   startDrag(worldX: number, worldY: number): void {
@@ -160,6 +214,7 @@ export class PlacementSystem {
     this.isDragging = true;
     this.dragCells = [];
     this.lastDragCell = null;
+    this._dragBeltsPlaced = 0;
 
     const gridX = Math.floor(worldX / CELL_SIZE_PX);
     const gridY = Math.floor(worldY / CELL_SIZE_PX);
@@ -277,17 +332,19 @@ export class PlacementSystem {
     } else if (!existing) {
       const belt = new Belt(pos, direction, this.currentBeltTier);
       this.commandHistory.execute(new PlaceBeltCommand(this.factory, belt));
+      this._dragBeltsPlaced++;
     }
   }
 
   private executeDeleteAt(pos: Vector2): void {
     const entity = this.factory.grid.getAt(pos) ?? this.factory.getIOPortAt(pos);
     if (entity) {
+      this.onEntityDeleted?.(entity, pos);
       this.commandHistory.execute(new RemoveEntityCommand(this.factory, entity, pos));
     }
   }
 
-  private inferBeltDirection(pos: Vector2): Direction {
+  inferBeltDirection(pos: Vector2): Direction {
     // Priority 1: If this cell is an exit port's internal target, point toward the exit
     for (const port of this.factory.getIOPorts()) {
       if (port.portType === 'output' && port.internalPosition.equals(pos)) {
@@ -296,9 +353,9 @@ export class PlacementSystem {
     }
 
     // Priority 2: Splitter output feeds into this position — continue in splitter's direction
-    for (const splitter of this.factory.getSplitters()) {
-      if (splitter.output0.equals(pos) || splitter.output1.equals(pos)) {
-        return splitter.direction;
+    for (const exchanger of this.factory.getExchangers()) {
+      if (exchanger.output0.equals(pos) || exchanger.output1.equals(pos)) {
+        return exchanger.direction;
       }
     }
 
@@ -309,7 +366,20 @@ export class PlacementSystem {
       }
     }
 
-    // Priority 4: Continue from a belt that feeds into this position
+    // Priority 4: Machine output feeds into this position — continue away from machine
+    for (const machine of this.factory.getMachines()) {
+      if (machine.getOutputAdjacentCells().some(c => c.equals(pos))) {
+        // Find the direction away from the machine center
+        for (const dir of ALL_DIRECTIONS) {
+          const behind = pos.add(directionToVector(oppositeDirection(dir)));
+          if (machine.getCells().some(c => c.add(machine.position).equals(behind))) {
+            return dir;
+          }
+        }
+      }
+    }
+
+    // Priority 5: Continue from a belt that feeds into this position
     for (const dir of ALL_DIRECTIONS) {
       const neighborPos = pos.add(directionToVector(dir));
       const neighbor = this.factory.grid.getAt(neighborPos);
@@ -326,9 +396,9 @@ export class PlacementSystem {
     }
 
     // Priority 6: If this cell is a splitter's input, point into the splitter
-    for (const splitter of this.factory.getSplitters()) {
-      if (splitter.input0.equals(pos) || splitter.input1.equals(pos)) {
-        return splitter.direction;
+    for (const exchanger of this.factory.getExchangers()) {
+      if (exchanger.input0.equals(pos) || exchanger.input1.equals(pos)) {
+        return exchanger.direction;
       }
     }
 
@@ -340,7 +410,20 @@ export class PlacementSystem {
       }
     }
 
-    // Priority 8: Adjacent belt with no feeder — point toward it
+    // Priority 8: Adjacent machine input — point toward it
+    for (const machine of this.factory.getMachines()) {
+      if (machine.getInputAdjacentCells().some(c => c.equals(pos))) {
+        // Find the direction toward the machine
+        for (const dir of ALL_DIRECTIONS) {
+          const targetPos = pos.add(directionToVector(dir));
+          if (machine.getCells().some(c => c.add(machine.position).equals(targetPos))) {
+            return dir;
+          }
+        }
+      }
+    }
+
+    // Priority 9: Adjacent belt with no feeder — point toward it
     for (const dir of ALL_DIRECTIONS) {
       const neighborPos = pos.add(directionToVector(dir));
       const neighbor = this.factory.grid.getAt(neighborPos);
@@ -372,14 +455,68 @@ export class PlacementSystem {
 
   // --- Single click execute ---
 
+  private rejectCurrentPlacement(): void {
+    const pos = this.ghostPosition!;
+    const inBounds = this.factory.grid.isInBounds(pos);
+    const occupied = inBounds && this.factory.grid.isOccupied(pos);
+    const isRoad = inBounds && isRoadCell(this.factory.borderContext, pos);
+
+    switch (this.currentTool) {
+      case 'belt':
+        if (!inBounds) this.emitRejection('Out of bounds');
+        else if (isRoad) this.emitRejection('Cannot place a belt on a road cell');
+        else if (occupied) this.emitRejection('Cell already occupied');
+        else this.emitRejection('Cannot place here');
+        break;
+      case 'exchanger':
+        if (!inBounds) this.emitRejection('Out of bounds');
+        else if (occupied) this.emitRejection('Cell already occupied');
+        else this.emitRejection('Not enough room for the exchanger');
+        break;
+      case 'entry':
+      case 'exit': {
+        const label = this.currentTool === 'entry' ? 'an entry' : 'an exit';
+        if (!inBounds) this.emitRejection('Out of bounds');
+        else if (!isRoad) this.emitRejection(`Place ${label} on a border road cell`);
+        else if (this.factory.hasIOPortAt(pos)) this.emitRejection('A port already exists here');
+        break;
+      }
+      case 'tunnel':
+        if (!inBounds) this.emitRejection('Out of bounds');
+        else if (occupied) this.emitRejection('Cell already occupied');
+        else this.emitRejection('Invalid tunnel position');
+        break;
+      case 'machine':
+        if (!inBounds) this.emitRejection('Out of bounds');
+        else if (occupied) this.emitRejection('Cell already occupied');
+        else this.emitRejection('Not enough room for the machine');
+        break;
+    }
+  }
+
+  private emitRejection(reason: string): void {
+    if (reason === this._lastRejection) return;
+    this._lastRejection = reason;
+    this.onPlacementRejected?.(reason);
+  }
+
+  private clearRejection(): void {
+    this._lastRejection = '';
+  }
+
   execute(): boolean {
-    if (!this.ghostPosition || !this.isValid) return false;
+    if (!this.ghostPosition) return false;
+    if (!this.isValid) {
+      this.rejectCurrentPlacement();
+      return false;
+    }
     if (this.isDragging) return false;
     if (this.justFinishedDrag) {
       this.justFinishedDrag = false;
       return false;
     }
 
+    this.clearRejection();
     const pos = this.ghostPosition;
 
     switch (this.currentTool) {
@@ -393,6 +530,7 @@ export class PlacementSystem {
       case 'delete': {
         const entity = this.factory.grid.getAt(pos) ?? this.factory.getIOPortAt(pos);
         if (!entity) return false;
+        this.onEntityDeleted?.(entity, pos);
         this.commandHistory.execute(new RemoveEntityCommand(this.factory, entity, pos));
         this.factory.updateBeltShapes();
         return true;
@@ -415,12 +553,20 @@ export class PlacementSystem {
           return true;
         }
       }
-      case 'splitter': {
+      case 'exchanger': {
         const direction = this.lastDragDirection;
-        const splitter = new Splitter(pos, direction, this.currentBeltTier);
+        const splitter = new Exchanger(pos, direction, this.currentBeltTier);
         if (!splitter.canPlaceAt(this.factory.grid, pos)) return false;
-        this.commandHistory.execute(new PlaceSplitterCommand(this.factory, splitter));
+        this.commandHistory.execute(new PlaceExchangerCommand(this.factory, splitter));
         this.factory.updateBeltShapes();
+        return true;
+      }
+      case 'machine': {
+        if (!this.isValidMachinePlacement(pos)) return false;
+        if (!this.currentMachineDef || !this.machineFactory) return false;
+        const machine = this.machineFactory(this.currentMachineDef, pos);
+        machine.rotation = this.machineRotation;
+        this.commandHistory.execute(new PlaceMachineCommand(this.factory, machine));
         return true;
       }
       case 'entry':
@@ -479,11 +625,18 @@ class PlaceTunnelPairCommand implements ICommand {
   }
 }
 
-class PlaceSplitterCommand implements ICommand {
-  readonly description = 'Place splitter';
-  constructor(private factory: Factory, private splitter: Splitter) {}
-  execute(): void { this.factory.addSplitter(this.splitter); }
-  undo(): void { this.factory.removeEntity(this.splitter); this.factory.updateBeltShapes(); }
+class PlaceExchangerCommand implements ICommand {
+  readonly description = 'Place exchanger';
+  constructor(private factory: Factory, private exchanger: Exchanger) {}
+  execute(): void { this.factory.addExchanger(this.exchanger); }
+  undo(): void { this.factory.removeEntity(this.exchanger); this.factory.updateBeltShapes(); }
+}
+
+class PlaceMachineCommand implements ICommand {
+  readonly description = 'Place machine';
+  constructor(private factory: Factory, private machine: Machine) {}
+  execute(): void { this.factory.addMachine(this.machine); }
+  undo(): void { this.factory.removeEntity(this.machine); }
 }
 
 class RemoveEntityCommand implements ICommand {

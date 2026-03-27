@@ -2,18 +2,45 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>Automastonks</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
-      canvas { display: block; }
+      * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        width: 100%; height: 100%; overflow: hidden; background: #1a1a2e;
+        touch-action: none; user-select: none; -webkit-user-select: none;
+        /* Safe area insets for notched devices */
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      canvas { display: block; touch-action: none; }
+
+      /* Landscape hint for portrait-locked mobile */
+      @media (max-height: 420px) and (orientation: landscape) and (hover: none) {
+        #rotate-hint {
+          display: flex !important;
+        }
+      }
+      #rotate-hint {
+        display: none; position: fixed; inset: 0; z-index: 9999;
+        background: #1a1a2e; color: #e8e8e8;
+        flex-direction: column; align-items: center; justify-content: center;
+        font-family: 'Inter', sans-serif; font-size: 14px; text-align: center;
+        gap: 12px;
+      }
+      #rotate-hint .icon { font-size: 48px; }
     </style>
   </head>
   <body>
+    <div id="rotate-hint">
+      <div class="icon">&#128241;</div>
+      <div>Please rotate your device<br>to portrait mode</div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

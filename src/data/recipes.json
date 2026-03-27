@@ -7,80 +7,211 @@
     "processingTicks": 15
   },
   {
-    "id": "press_log_to_sawdust",
-    "machineType": "press",
-    "inputs": [{ "resourceId": "wood_log", "quantity": 1 }],
-    "outputs": [{ "resourceId": "sawdust", "quantity": 3 }],
+    "id": "cut_plank_to_paper",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "plank", "quantity": 1 }],
+    "outputs": [{ "resourceId": "paper", "quantity": 2 }],
     "processingTicks": 20
   },
   {
-    "id": "press_olive_to_oil",
+    "id": "cut_stone_to_brick",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "stone", "quantity": 1 }],
+    "outputs": [{ "resourceId": "stone_brick", "quantity": 2 }],
+    "processingTicks": 18
+  },
+  {
+    "id": "cut_iron_bar_to_nails",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "iron_bar", "quantity": 1 }],
+    "outputs": [{ "resourceId": "nails", "quantity": 4 }],
+    "processingTicks": 12
+  },
+  {
+    "id": "cut_copper_bar_to_wire",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "copper_bar", "quantity": 1 }],
+    "outputs": [{ "resourceId": "copper_wire", "quantity": 3 }],
+    "processingTicks": 14
+  },
+  {
+    "id": "cut_iron_bar_to_bolt",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "iron_bar", "quantity": 2 }],
+    "outputs": [{ "resourceId": "bolt", "quantity": 3 }],
+    "processingTicks": 14
+  },
+  {
+    "id": "cut_iron_plate_to_gear",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "iron_plate", "quantity": 1 }],
+    "outputs": [{ "resourceId": "gear", "quantity": 1 }],
+    "processingTicks": 22
+  },
+  {
+    "id": "cut_leaf_to_string",
+    "machineType": "cut",
+    "inputs": [{ "resourceId": "leaf", "quantity": 2 }],
+    "outputs": [{ "resourceId": "string", "quantity": 1 }],
+    "processingTicks": 12
+  },
+
+  {
+    "id": "press_plank_to_beam",
     "machineType": "press",
-    "inputs": [{ "resourceId": "olive", "quantity": 1 }],
-    "outputs": [{ "resourceId": "olive_oil", "quantity": 1 }],
+    "inputs": [{ "resourceId": "plank", "quantity": 2 }],
+    "outputs": [{ "resourceId": "beam", "quantity": 1 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "press_stone_to_sand",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "stone", "quantity": 1 }],
+    "outputs": [{ "resourceId": "sand", "quantity": 2 }],
     "processingTicks": 15
   },
   {
-    "id": "press_tomato_to_sauce",
+    "id": "press_iron_bar_to_plate",
     "machineType": "press",
-    "inputs": [{ "resourceId": "tomato", "quantity": 1 }],
-    "outputs": [{ "resourceId": "tomato_sauce", "quantity": 1 }],
-    "processingTicks": 12
-  },
-  {
-    "id": "extract_wheat_to_flour",
-    "machineType": "extract",
-    "inputs": [{ "resourceId": "wheat", "quantity": 1 }],
-    "outputs": [{ "resourceId": "flour", "quantity": 1 }],
-    "processingTicks": 10
-  },
-  {
-    "id": "mix_flour_water_to_dough",
-    "machineType": "mix",
-    "inputs": [{ "resourceId": "flour", "quantity": 1 }, { "resourceId": "water", "quantity": 1 }],
-    "outputs": [{ "resourceId": "dough", "quantity": 1 }],
-    "processingTicks": 12
-  },
-  {
-    "id": "cook_dough_to_bread",
-    "machineType": "cook",
-    "inputs": [{ "resourceId": "dough", "quantity": 1 }],
-    "outputs": [{ "resourceId": "bread", "quantity": 1 }],
-    "processingTicks": 20
-  },
-  {
-    "id": "smelt_iron_ore",
-    "machineType": "smelt",
-    "inputs": [{ "resourceId": "iron_ore", "quantity": 1 }],
-    "outputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
-    "processingTicks": 25
-  },
-  {
-    "id": "press_iron_ingot_to_plate",
-    "machineType": "press",
-    "inputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
+    "inputs": [{ "resourceId": "iron_bar", "quantity": 1 }],
     "outputs": [{ "resourceId": "iron_plate", "quantity": 1 }],
     "processingTicks": 18
   },
   {
-    "id": "slice_iron_ingot_to_nails",
-    "machineType": "slice",
-    "inputs": [{ "resourceId": "iron_ingot", "quantity": 1 }],
-    "outputs": [{ "resourceId": "nail", "quantity": 4 }],
-    "processingTicks": 12
+    "id": "press_copper_bar_to_plate",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "copper_bar", "quantity": 1 }],
+    "outputs": [{ "resourceId": "copper_plate", "quantity": 1 }],
+    "processingTicks": 18
   },
   {
-    "id": "assemble_chair",
-    "machineType": "assemble",
-    "inputs": [{ "resourceId": "plank", "quantity": 2 }, { "resourceId": "nail", "quantity": 2 }],
-    "outputs": [{ "resourceId": "chair", "quantity": 1 }],
+    "id": "press_copper_plate_to_pipe",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "copper_plate", "quantity": 1 }],
+    "outputs": [{ "resourceId": "pipe", "quantity": 1 }],
+    "processingTicks": 18
+  },
+  {
+    "id": "press_string_to_cloth",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "string", "quantity": 4 }],
+    "outputs": [{ "resourceId": "cloth", "quantity": 1 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "press_string_to_rope",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "string", "quantity": 3 }],
+    "outputs": [{ "resourceId": "rope", "quantity": 1 }],
+    "processingTicks": 16
+  },
+  {
+    "id": "press_gold_bar_to_plate",
+    "machineType": "press",
+    "inputs": [{ "resourceId": "gold_bar", "quantity": 1 }],
+    "outputs": [{ "resourceId": "gold_plate", "quantity": 1 }],
+    "processingTicks": 20
+  },
+
+  {
+    "id": "smelt_iron_ore",
+    "machineType": "smelt",
+    "inputs": [{ "resourceId": "iron_ore", "quantity": 1 }],
+    "outputs": [{ "resourceId": "iron_bar", "quantity": 1 }],
+    "processingTicks": 25
+  },
+  {
+    "id": "smelt_copper_ore",
+    "machineType": "smelt",
+    "inputs": [{ "resourceId": "copper_ore", "quantity": 1 }],
+    "outputs": [{ "resourceId": "copper_bar", "quantity": 1 }],
+    "processingTicks": 25
+  },
+  {
+    "id": "smelt_sand_to_glass",
+    "machineType": "smelt",
+    "inputs": [{ "resourceId": "sand", "quantity": 2 }],
+    "outputs": [{ "resourceId": "glass", "quantity": 1 }],
     "processingTicks": 30
   },
   {
-    "id": "assemble_table",
+    "id": "smelt_gold_ore",
+    "machineType": "smelt",
+    "inputs": [{ "resourceId": "gold_ore", "quantity": 1 }],
+    "outputs": [{ "resourceId": "gold_bar", "quantity": 1 }],
+    "processingTicks": 30
+  },
+
+  {
+    "id": "assemble_glue",
     "machineType": "assemble",
-    "inputs": [{ "resourceId": "plank", "quantity": 3 }, { "resourceId": "screw", "quantity": 2 }],
-    "outputs": [{ "resourceId": "table", "quantity": 1 }],
-    "processingTicks": 40
+    "inputs": [
+      { "resourceId": "string", "quantity": 1 },
+      { "resourceId": "paper", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "glue", "quantity": 1 }],
+    "processingTicks": 18
+  },
+  {
+    "id": "assemble_cable",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "copper_wire", "quantity": 2 },
+      { "resourceId": "cloth", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "cable", "quantity": 1 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "assemble_wooden_frame",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "beam", "quantity": 2 },
+      { "resourceId": "nails", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "wooden_frame", "quantity": 1 }],
+    "processingTicks": 25
+  },
+  {
+    "id": "assemble_light_bulb",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "glass", "quantity": 1 },
+      { "resourceId": "copper_wire", "quantity": 1 },
+      { "resourceId": "iron_plate", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "light_bulb", "quantity": 1 }],
+    "processingTicks": 28
+  },
+  {
+    "id": "assemble_hammer",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "iron_bar", "quantity": 1 },
+      { "resourceId": "plank", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "hammer", "quantity": 1 }],
+    "processingTicks": 20
+  },
+  {
+    "id": "assemble_saw",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "iron_plate", "quantity": 1 },
+      { "resourceId": "plank", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "saw", "quantity": 1 }],
+    "processingTicks": 22
+  },
+  {
+    "id": "assemble_shovel",
+    "machineType": "assemble",
+    "inputs": [
+      { "resourceId": "iron_plate", "quantity": 1 },
+      { "resourceId": "plank", "quantity": 1 },
+      { "resourceId": "nails", "quantity": 1 }
+    ],
+    "outputs": [{ "resourceId": "shovel", "quantity": 1 }],
+    "processingTicks": 25
   }
 ]

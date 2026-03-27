@@ -1,6 +1,22 @@
-[
-  { "id": "solid", "name": "Solid", "description": "Standard solid items, transportable by all vehicles" },
-  { "id": "liquid", "name": "Liquid", "description": "Liquids require tanker vehicles (truck-tanker, train-tanker, boat)" },
-  { "id": "fragile", "name": "Fragile", "description": "Fragile items require careful handling (truck slow, plane)" },
-  { "id": "bulky", "name": "Bulky", "description": "Large items cannot be transported by plane" }
-]
+{
+  "transport": [
+    { "id": "solid", "name": "Solid", "description": "Standard solid items, transportable by all vehicles" },
+    { "id": "liquid", "name": "Liquid", "description": "Liquids require tanker vehicles (truck-tanker, train-tanker, boat)" },
+    { "id": "fragile", "name": "Fragile", "description": "Fragile items require careful handling (truck slow, plane)" },
+    { "id": "bulky", "name": "Bulky", "description": "Large items cannot be transported by plane" }
+  ],
+  "origin": [
+    { "id": "natural", "name": "Natural", "description": "Raw resources extracted from the world" },
+    { "id": "processed", "name": "Processed", "description": "Intermediate items transformed once" },
+    { "id": "manufactured", "name": "Manufactured", "description": "Finished products from assembly or cooking" },
+    { "id": "waste", "name": "Waste", "description": "By-products and leftover materials" }
+  ],
+  "material": [
+    { "id": "wood", "name": "Wood", "description": "Timber and wood-derived items" },
+    { "id": "stone", "name": "Stone", "description": "Stone, sand, glass, and masonry" },
+    { "id": "metal", "name": "Metal", "description": "Ores, ingots, and metal products" },
+    { "id": "food", "name": "Food", "description": "Crops, ingredients, and prepared food" },
+    { "id": "fluid", "name": "Fluid", "description": "Water and other base fluids" },
+    { "id": "misc", "name": "Misc", "description": "Uncategorized materials" }
+  ]
+}

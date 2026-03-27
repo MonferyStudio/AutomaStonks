@@ -1,16 +1,18 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import { formatNumber } from '@/utils/formatNumber';
+import { formatMoney } from '@/utils/currency';
 import type { Market } from '@/economy/Market';
 import type { ResourceRegistry, ResourceDefinition } from '@/simulation/Resource';
 import type { Wallet } from '@/economy/Wallet';
+import { getXPManager } from '@/economy/XPManager';
 import type { Factory } from '@/simulation/Factory';
 import { IOPort } from '@/factory/IOPort';
 import { ItemStack } from '@/simulation/ItemStack';
 import { eventBus } from '@/core/EventBus';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -18,20 +20,20 @@ const TITLE_STYLE = new TextStyle({
 });
 
 const ITEM_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fill: COLORS.TEXT_PRIMARY,
 });
 
 const PRICE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_MONO,
   fontSize: 11,
   fontWeight: '600',
   fill: COLORS.ACCENT_YELLOW,
 });
 
 const DIM_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fill: COLORS.TEXT_DIM,
 });
@@ -93,13 +95,15 @@ export class MarketUI {
   }
 
   private rebuild(): void {
-    this.contentContainer.removeChildren();
+    this.contentContainer.removeChildren().forEach(c => c.destroy({ children: true }));
 
-    const available = this.market.getAvailableResources();
+    const xp = getXPManager();
+    const available = this.market.getAvailableResources()
+      .filter(r => !xp || xp.isUnlocked(r.requiredLevel ?? 0));
     let yOffset = 0;
 
     const balanceText = new Text({
-      text: `Balance: ${formatNumber(this.wallet.coins)}`,
+      text: `Balance: ${formatMoney(this.wallet.coins)}`,
       style: PRICE_STYLE,
     });
     this.contentContainer.addChild(balanceText);
@@ -144,7 +148,7 @@ export class MarketUI {
     row.addChild(categoryText);
 
     const price = this.market.getPrice(res.id);
-    const priceText = new Text({ text: formatNumber(price), style: PRICE_STYLE });
+    const priceText = new Text({ text: formatMoney(price), style: PRICE_STYLE });
     priceText.anchor.set(1, 0.5);
     priceText.position.set(PANEL_WIDTH - PANEL_PADDING * 2 - 30, (ROW_HEIGHT - 4) / 2);
     row.addChild(priceText);

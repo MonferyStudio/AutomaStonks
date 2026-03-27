@@ -1,19 +1,21 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS, FACTORY_CELL_RATIO } from '@/utils/Constants';
+import { COLORS, FACTORY_CELL_RATIO, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import { formatNumber } from '@/utils/formatNumber';
+import { formatMoney } from '@/utils/currency';
 import type { CitySlot } from '@/city/CitySlot';
+import { textResolution } from '@/utils/platform';
 
 const CAPACITY_PER_CELL = 1000;
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
 });
 
 const BODY_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fill: COLORS.TEXT_PRIMARY,
   wordWrap: true,
@@ -21,14 +23,14 @@ const BODY_STYLE = new TextStyle({
 });
 
 const COST_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_MONO,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.ACCENT_YELLOW,
 });
 
 const BTN_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -52,10 +54,10 @@ export class PurchaseTooltip {
   show(slot: CitySlot, screenX: number, screenY: number, screenWidth: number, screenHeight: number, onConfirm: (slot: CitySlot) => void): void {
     this.slot = slot;
     this.onConfirm = onConfirm;
-    this.container.removeChildren();
+    this.container.removeChildren().forEach(c => c.destroy({ children: true }));
 
     const pad = 10;
-    const cellCount = slot.polyomino.cells.length;
+    const cellCount = slot.cellCount;
 
     // Build info lines
     const typeLabel = slot.slotType === 'factory' ? 'Factory' : 'Storage';
@@ -74,16 +76,16 @@ export class PurchaseTooltip {
 
     // Title
     const title = new Text({ text: typeLabel, style: new TextStyle({
-      fontFamily: 'Space Mono, monospace', fontSize: 12, fontWeight: '700', fill: typeColor,
-    }), resolution: 4 });
+      fontFamily: FONT_MONO, fontSize: 12, fontWeight: '700', fill: typeColor,
+    }), resolution: textResolution() });
     title.position.set(pad, pad);
 
     // Body
-    const body = new Text({ text: infoLines.join('\n'), style: BODY_STYLE, resolution: 4 });
+    const body = new Text({ text: infoLines.join('\n'), style: BODY_STYLE, resolution: textResolution() });
     body.position.set(pad, pad + 20);
 
     // Cost
-    const cost = new Text({ text: `Cost: ${formatNumber(slot.cost)}`, style: COST_STYLE, resolution: 4 });
+    const cost = new Text({ text: `Cost: ${formatMoney(slot.cost)}`, style: COST_STYLE, resolution: textResolution() });
     cost.position.set(pad, body.y + body.height + 6);
 
     // Buttons
@@ -96,7 +98,7 @@ export class PurchaseTooltip {
     const confirmBg = new Graphics();
     confirmBg.roundRect(pad, btnY, btnW, btnH, 4);
     confirmBg.fill({ color: typeColor, alpha: 0.8 });
-    const confirmText = new Text({ text: 'Buy', style: BTN_STYLE, resolution: 4 });
+    const confirmText = new Text({ text: 'Buy', style: BTN_STYLE, resolution: textResolution() });
     confirmText.anchor.set(0.5);
     confirmText.position.set(pad + btnW / 2, btnY + btnH / 2);
 
@@ -104,7 +106,7 @@ export class PurchaseTooltip {
     const cancelBg = new Graphics();
     cancelBg.roundRect(pad + btnW + gap, btnY, btnW, btnH, 4);
     cancelBg.fill({ color: COLORS.TEXT_DIM, alpha: 0.3 });
-    const cancelText = new Text({ text: 'Cancel', style: BTN_STYLE, resolution: 4 });
+    const cancelText = new Text({ text: 'Cancel', style: BTN_STYLE, resolution: textResolution() });
     cancelText.anchor.set(0.5);
     cancelText.position.set(pad + btnW + gap + btnW / 2, btnY + btnH / 2);
 

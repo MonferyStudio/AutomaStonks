@@ -1,12 +1,14 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI } from '@/utils/Constants';
 import type { ResourceRegistry, ResourceDefinition } from '@/simulation/Resource';
 import type { IOPort } from '@/factory/IOPort';
 import type { Storage } from '@/simulation/Storage';
 import { formatNumber } from '@/utils/formatNumber';
+import { SpriteFactory } from '@/rendering/SpriteFactory';
+import { getXPManager } from '@/economy/XPManager';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -14,13 +16,13 @@ const TITLE_STYLE = new TextStyle({
 });
 
 const ITEM_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fill: COLORS.TEXT_PRIMARY,
 });
 
 const DIM_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fill: COLORS.TEXT_DIM,
 });
@@ -80,7 +82,7 @@ export class EntryConfigUI {
   }
 
   private rebuild(): void {
-    this.contentContainer.removeChildren();
+    this.contentContainer.removeChildren().forEach(c => c.destroy({ children: true }));
     if (!this.port) return;
 
     const port = this.port;
@@ -105,13 +107,12 @@ export class EntryConfigUI {
         currentBg.stroke({ color: COLORS.IO_INPUT, width: 1, alpha: 0.4 });
         currentRow.addChild(currentBg);
 
-        const swatch = new Graphics();
-        swatch.circle(14, 14, 5);
-        swatch.fill(def.color);
-        currentRow.addChild(swatch);
+        const icon = SpriteFactory.createItemIcon(def, 20);
+        icon.position.set(4, 4);
+        currentRow.addChild(icon);
 
         const nameText = new Text({ text: def.name, style: { ...ITEM_STYLE, fontSize: 10 } });
-        nameText.position.set(24, 7);
+        nameText.position.set(28, 7);
         currentRow.addChild(nameText);
 
         const checkmark = new Text({ text: '\u2713', style: { ...ITEM_STYLE, fontSize: 12, fill: COLORS.IO_INPUT } });
@@ -184,6 +185,8 @@ export class EntryConfigUI {
 
         const def = this.resourceRegistry.get(resId);
         if (!def) continue;
+        const xp = getXPManager();
+        if (xp && !xp.isUnlocked(def.requiredLevel ?? 0)) continue;
 
         const row = new Container();
         row.position.set(0, yOffset);
@@ -193,13 +196,12 @@ export class EntryConfigUI {
         rowBg.fill({ color: COLORS.BG_CARD, alpha: 0.8 });
         row.addChild(rowBg);
 
-        const swatch = new Graphics();
-        swatch.circle(14, 14, 4);
-        swatch.fill(def.color);
-        row.addChild(swatch);
+        const icon = SpriteFactory.createItemIcon(def, 20);
+        icon.position.set(4, 4);
+        row.addChild(icon);
 
         const name = new Text({ text: def.name, style: { ...ITEM_STYLE, fontSize: 10 } });
-        name.position.set(24, 3);
+        name.position.set(28, 3);
         row.addChild(name);
 
         // Show stock quantity instead of price

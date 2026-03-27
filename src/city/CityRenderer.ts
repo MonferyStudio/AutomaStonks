@@ -1,20 +1,26 @@
-import { Container, Graphics, Sprite, Text, Texture, TextStyle } from 'pixi.js';
-import { COLORS, CELL_SIZE_PX, SHADOW_ALPHA } from '@/utils/Constants';
+import { Application, Container, Graphics, Sprite, Text, TextStyle } from 'pixi.js';
+import { COLORS, CELL_SIZE_PX, FONT_UI, FONT_MONO } from '@/utils/Constants';
+import type { BuildingAlert } from '@/core/AlertMonitor';
 import { TextureCache } from '@/rendering/TextureCache';
-import { getRoadSpriteInfo, getBuildingTileIndices } from '@/rendering/TileResolver';
-import { formatNumber } from '@/utils/formatNumber';
-import type { CityLayout } from './CityGenerator';
+import { getRoadSpriteInfo } from '@/rendering/TileResolver';
+import { formatMoney } from '@/utils/currency';
+import { eventBus } from '@/core/EventBus';
+import { FloatingTextManager } from '@/ui/FloatingTextManager';
+import type { CityLayout } from './CityLayoutData';
 import type { CitySlot } from './CitySlot';
-import type { CityNode } from './CityNode';
-import type { TransportRoute } from '@/transport/TransportRoute';
+import type { Truck } from '@/transport/Truck';
+import type { TruckRoute } from '@/transport/TruckRoute';
 import type { PolyominoRegistry } from '@/simulation/PolyominoRegistry';
-import type { Polyomino } from '@/simulation/Polyomino';
 import { Vector2 } from '@/utils/Vector2';
+import { getTruckColor } from '@/data/truckColors';
+import { textResolution } from '@/utils/platform';
+
 
 const CS = CELL_SIZE_PX;
 
 export class CityRenderer {
   readonly container: Container;
+  private mapLayer: Container;
   private roadLayer: Container;
   private buildingLayer: Container;
   private decorLayer: Container;
@@ -22,10 +28,18 @@ export class CityRenderer {
   private uiOverlay: Container;
   private polyRegistry: PolyominoRegistry;
   private bgColor: number;
+  private app: Application | null = null;
   private dirty = true;
   private paintPreviewLayer: Container;
   private paintCells: Vector2[] = [];
   private paintColor: number = 0;
+  readonly floatingText: FloatingTextManager;
+  private cityId: string = '';
+  /** When true, show road overlay and slot outlines on map-based cities */
+  showDebugOverlay = false;
+
+  private _hoveredSlotKey: string | null = null;
+  private _labelContainers = new Map<string, { container: Container; cx: number; cy: number }>();
 
   constructor(polyRegistry: PolyominoRegistry, bgColor: number = COLORS.BG_PRIMARY) {
     this.polyRegistry = polyRegistry;
@@ -34,6 +48,8 @@ export class CityRenderer {
     this.container = new Container();
     this.container.sortableChildren = true;
 
+    this.mapLayer = new Container();
+    this.mapLayer.zIndex = -1;
     this.roadLayer = new Container();
     this.roadLayer.zIndex = 0;
     this.buildingLayer = new Container();
@@ -42,38 +58,189 @@ export class CityRenderer {
     this.decorLayer.zIndex = 2;
     this.vehicleLayer = new Container();
     this.vehicleLayer.zIndex = 4;
+    this.vehicleLayer.sortableChildren = true;
     this.paintPreviewLayer = new Container();
     this.paintPreviewLayer.zIndex = 3;
     this.uiOverlay = new Container();
     this.uiOverlay.zIndex = 5;
 
-    this.container.addChild(this.roadLayer, this.buildingLayer, this.decorLayer, this.paintPreviewLayer, this.vehicleLayer, this.uiOverlay);
+    this.floatingText = new FloatingTextManager();
+    this.container.addChild(this.mapLayer, this.roadLayer, this.buildingLayer, this.decorLayer, this.paintPreviewLayer, this.vehicleLayer, this.uiOverlay, this.floatingText.container);
+
+    // Refresh building labels when currency symbol changes
+    eventBus.on('CurrencyChanged', () => this.markDirty());
+  }
+
+  setHoveredSlot(slotKey: string | null): void {
+    if (slotKey === this._hoveredSlotKey) return;
+    // Un-hover previous
+    const prev = this._hoveredSlotKey ? this._labelContainers.get(this._hoveredSlotKey) : null;
+    if (prev) {
+      prev.container.scale.set(1);
+      prev.container.pivot.set(0, 0);
+      prev.container.position.set(0, 0);
+    }
+    this._hoveredSlotKey = slotKey;
+    // Hover new — scale up from center
+    const next = slotKey ? this._labelContainers.get(slotKey) : null;
+    if (next) {
+      const s = 1.15;
+      next.container.pivot.set(next.cx, next.cy);
+      next.container.position.set(next.cx, next.cy);
+      next.container.scale.set(s);
+    }
+  }
+
+  setCityId(cityId: string): void {
+    this.cityId = cityId;
+    this.markDirty();
   }
 
   markDirty(): void {
     this.dirty = true;
   }
 
-  render(layout: CityLayout, factorySlots: CitySlot[], shopSlots: CitySlot[], storageSlots: CitySlot[], routes: readonly TransportRoute[]): void {
+  /** Link the Pixi app so bgColor changes also update the canvas background */
+  setApp(app: Application): void {
+    this.app = app;
+    this.syncAppBackground();
+  }
+
+  setBgColor(color: number): void {
+    this.bgColor = color;
+    this.syncAppBackground();
+    this.markDirty();
+  }
+
+  getBgColor(): number {
+    return this.bgColor;
+  }
+
+  private syncAppBackground(): void {
+    if (this.app) {
+      this.app.renderer.background.color = this.bgColor;
+    }
+  }
+
+  /** Truck data for rendering — set externally each frame */
+  private truckData: { truck: Truck; route: TruckRoute }[] = [];
+  /** Interpolation alpha (0–1) between previous and current tick */
+  private truckInterpolationAlpha: number = 1;
+
+  /** Building alerts for overlay icons */
+  private alertData = new Map<string, BuildingAlert>();
+
+  /** Custom building names */
+  private buildingNames = new Map<string, string>();
+
+
+  setTruckData(data: { truck: Truck; route: TruckRoute }[], interpolationAlpha: number = 1): void {
+    this.truckData = data;
+    this.truckInterpolationAlpha = interpolationAlpha;
+  }
+
+  setAlertData(alerts: Map<string, BuildingAlert>): void {
+    this.alertData = alerts;
+    this.markDirty();
+  }
+
+  setBuildingNames(names: Map<string, string>): void {
+    this.buildingNames = names;
+    this.markDirty();
+  }
+
+  render(layout: CityLayout, factorySlots: CitySlot[], shopSlots: CitySlot[], storageSlots: CitySlot[]): void {
+    const allSlots = [...factorySlots, ...shopSlots, ...storageSlots];
+
     if (!this.dirty) {
-      this.renderVehicles(routes);
+      this.vehicleLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+      this.renderTruckRouteLines();
+      this.renderTrucks();
       return;
     }
 
     this.dirty = false;
-    this.roadLayer.removeChildren();
-    this.buildingLayer.removeChildren();
-    this.decorLayer.removeChildren();
+    this.mapLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.roadLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.buildingLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.decorLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.vehicleLayer.removeChildren().forEach(c => c.destroy({ children: true }));
 
-    this.renderBackground(layout);
-    this.renderRoads(layout);
-    this.renderDecorations(layout.decorations);
-    this.renderSlots(factorySlots, COLORS.FACTORY, false, 'factory');
-    this.renderSlots(shopSlots, COLORS.SHOP, true, 'shop');
-    this.renderSlots(storageSlots, COLORS.STORAGE, false, 'storage');
-    this.renderRouteLines(routes);
+    const mapTex = TextureCache.getCityMap(this.cityId);
+    if (mapTex) {
+      // City has a pre-rendered map image — display it as background
+      const mapSprite = new Sprite(mapTex);
+      mapSprite.roundPixels = true;
+      // Map images are drawn at 16px/cell in Tiled, scale up to CELL_SIZE_PX
+      mapSprite.scale.set(CS / 16);
+      this.mapLayer.addChild(mapSprite);
+
+      // Debug overlay: show road cells and slot outlines on top of the map
+      if (this.showDebugOverlay) {
+        this.renderRoadOverlay(layout);
+      }
+    } else {
+      this.renderBackground(layout);
+      this.renderRoads(layout);
+    }
+
+    // Render slot outlines — always when no map, only in debug when map exists
+    if (!mapTex || this.showDebugOverlay) {
+      this.renderSlots(factorySlots, COLORS.FACTORY, false);
+      this.renderSlots(shopSlots, COLORS.SHOP, true);
+      this.renderSlots(storageSlots, COLORS.STORAGE, false);
+    }
+
+    // Debug: render truck stop markers + camera bounds
+    if (this.showDebugOverlay) {
+      this.renderTruckStopMarkers(allSlots);
+      if (layout.cameraBounds) {
+        this.renderCameraBoundsOverlay(layout.cameraBounds);
+      }
+    }
+    this.renderOverlayIcons(allSlots);
+    this.renderTruckRouteLines();
     this.renderPaintPreview();
-    this.renderVehicles(routes);
+    this.renderTrucks();
+  }
+
+  private renderRoadOverlay(layout: CityLayout): void {
+    const roads = layout.roadNetwork.getAllRoads();
+    if (roads.length === 0) return;
+
+    const overlay = new Graphics();
+    for (const pos of roads) {
+      overlay.rect(pos.x * CS, pos.y * CS, CS, CS);
+    }
+    overlay.fill({ color: 0xffffff, alpha: 0.12 });
+    this.roadLayer.addChild(overlay);
+  }
+
+  private renderTruckStopMarkers(allSlots: CitySlot[]): void {
+    const g = new Graphics();
+    for (const slot of allSlots) {
+      if (!slot.truckStop) continue;
+      const cx = slot.truckStop.x * CS + CS / 2;
+      const cy = slot.truckStop.y * CS + CS / 2;
+      const r = CS * 0.3;
+
+      // Diamond shape
+      g.moveTo(cx, cy - r);
+      g.lineTo(cx + r, cy);
+      g.lineTo(cx, cy + r);
+      g.lineTo(cx - r, cy);
+      g.closePath();
+      g.fill({ color: COLORS.ACCENT_YELLOW, alpha: 0.7 });
+      g.stroke({ color: 0xffffff, width: 1.5, alpha: 0.8 });
+    }
+    this.buildingLayer.addChild(g);
+  }
+
+  private renderCameraBoundsOverlay(bounds: { x: number; y: number; w: number; h: number }): void {
+    const g = new Graphics();
+    g.rect(bounds.x, bounds.y, bounds.w, bounds.h);
+    g.stroke({ color: 0xff4444, width: 2, alpha: 0.8 });
+    this.buildingLayer.addChild(g);
   }
 
   private renderBackground(layout: CityLayout): void {
@@ -88,7 +255,7 @@ export class CityRenderer {
   private renderRoads(layout: CityLayout): void {
     const roads = layout.roadNetwork.getAllRoads();
     const roadSet = new Set(roads.map(r => r.toKey()));
-    const scale = CS / 32;
+    const scale = CS / 16;
 
     const has = (x: number, y: number) => roadSet.has(new Vector2(x, y).toKey());
 
@@ -113,32 +280,23 @@ export class CityRenderer {
 
   // --- Buildings ---
 
-  private renderSlots(slots: CitySlot[], color: number, alwaysBuilt: boolean, buildingType: string): void {
+  private renderSlots(slots: CitySlot[], color: number, alwaysBuilt: boolean): void {
     for (const slot of slots) {
-      const poly = slot.polyomino;
-
-      const ox = slot.position.x * CS;
-      const oy = slot.position.y * CS;
-
-      if (slot.purchased || alwaysBuilt) {
-        this.drawBuilding(poly, ox, oy, color, this.buildingLayer, buildingType);
+      const zones = slot.getWorldZones();
+      if (this.showDebugOverlay) {
+        // Debug: always show zone outlines for all slots
+        for (const z of zones) {
+          this.drawLockedZone(z.x, z.y, z.w, z.h, color);
+        }
+      } else if (slot.purchased || alwaysBuilt) {
+        for (const z of zones) {
+          this.drawBuilding(z.x, z.y, z.w, z.h, color, this.buildingLayer);
+        }
       } else {
-        this.drawLockedSlot(poly, ox, oy, slot.cost, slot.slotType, color);
+        for (const z of zones) {
+          this.drawLockedZone(z.x, z.y, z.w, z.h, color);
+        }
       }
-    }
-  }
-
-  private drawPolyShape(g: Graphics, poly: Polyomino, ox: number, oy: number): void {
-    for (const cell of poly.cells) {
-      g.roundRect(ox + cell.x * CS, oy + cell.y * CS, CS, CS, 6);
-    }
-    for (const cell of poly.cells) {
-      if (poly.hasCellAt(cell.x + 1, cell.y))
-        g.rect(ox + cell.x * CS + CS - 6, oy + cell.y * CS, 12, CS);
-      if (poly.hasCellAt(cell.x, cell.y + 1))
-        g.rect(ox + cell.x * CS, oy + cell.y * CS + CS - 6, CS, 12);
-      if (poly.hasCellAt(cell.x + 1, cell.y) && poly.hasCellAt(cell.x, cell.y + 1) && poly.hasCellAt(cell.x + 1, cell.y + 1))
-        g.rect(ox + cell.x * CS + CS - 6, oy + cell.y * CS + CS - 6, 12, 12);
     }
   }
 
@@ -149,218 +307,149 @@ export class CityRenderer {
     return (Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b);
   }
 
-  private drawBuilding(poly: Polyomino, ox: number, oy: number, color: number, layer: Container, buildingType: string = ''): void {
-    const frames = TextureCache.getBuildingFrames(buildingType);
+  private drawBuilding(ox: number, oy: number, w: number, h: number, color: number, layer: Container): void {
+    // If we have a city map image, purchased buildings are already in the image
+    if (TextureCache.getCityMap(this.cityId)) return;
 
-    if (frames && frames.length >= 30) {
-      this.drawBuildingSprites(poly, ox, oy, layer, frames);
-      return;
-    }
-
-    // Fallback: procedural rendering
+    // Procedural rendering — simple rectangle
     const darkColor = this.darken(color, 0.25);
     const sd = 3;
-    const bandH = Math.round(CS * 0.35);
-    const r = 6;
+    const bandH = Math.round(h * 0.35);
+    const rad = 6;
 
-    const shadowFill = new Graphics();
-    for (const cell of poly.cells) {
-      shadowFill.rect(ox + sd + cell.x * CS, oy + sd + cell.y * CS, CS, CS);
-    }
-    shadowFill.fill(0x000000);
-
-    const shadowMask = new Graphics();
-    this.drawPolyShape(shadowMask, poly, ox + sd, oy + sd);
-    shadowMask.fill(0xffffff);
-    layer.addChild(shadowMask);
-    shadowFill.mask = shadowMask;
-    shadowFill.alpha = 0.3;
-    layer.addChild(shadowFill);
+    const shadow = new Graphics();
+    shadow.roundRect(ox + sd, oy + sd, w, h, rad);
+    shadow.fill({ color: 0x000000, alpha: 0.3 });
+    layer.addChild(shadow);
 
     const body = new Graphics();
-    this.drawPolyShape(body, poly, ox, oy);
+    body.roundRect(ox, oy, w, h, rad);
     body.fill(color);
     layer.addChild(body);
 
     const band = new Graphics();
-    for (const cell of poly.cells) {
-      if (poly.hasCellAt(cell.x, cell.y + 1)) continue;
-      const cx = ox + cell.x * CS;
-      const cy = oy + cell.y * CS;
-      band.rect(cx, cy + CS - bandH, CS, bandH);
-    }
-    for (const cell of poly.cells) {
-      if (poly.hasCellAt(cell.x, cell.y + 1)) continue;
-      if (poly.hasCellAt(cell.x + 1, cell.y) && !poly.hasCellAt(cell.x + 1, cell.y + 1)) {
-        band.rect(ox + cell.x * CS + CS - r, oy + cell.y * CS + CS - bandH, r * 2, bandH);
-      }
-    }
+    band.roundRect(ox, oy + h - bandH, w, bandH, rad);
     band.fill(darkColor);
-
-    const maskGfx = new Graphics();
-    this.drawPolyShape(maskGfx, poly, ox, oy);
-    maskGfx.fill(0xffffff);
-    layer.addChild(maskGfx);
-    band.mask = maskGfx;
+    // Mask band to building shape
+    const mask = new Graphics();
+    mask.roundRect(ox, oy, w, h, rad);
+    mask.fill(0xffffff);
+    layer.addChild(mask);
+    band.mask = mask;
     layer.addChild(band);
   }
 
-  private drawBuildingSprites(poly: Polyomino, ox: number, oy: number, layer: Container, frames: Texture[]): void {
-    const scale = CS / 32;
+  /** Draw a single locked zone rectangle (fill + outline) */
+  private drawLockedZone(ox: number, oy: number, w: number, h: number, color: number): void {
+    const fill = new Graphics();
+    fill.roundRect(ox, oy, w, h, 6);
+    fill.fill({ color, alpha: 0.12 });
+    this.buildingLayer.addChild(fill);
 
-    for (const cell of poly.cells) {
-      const up = poly.hasCellAt(cell.x, cell.y - 1);
-      const down = poly.hasCellAt(cell.x, cell.y + 1);
-      const left = poly.hasCellAt(cell.x - 1, cell.y);
-      const right = poly.hasCellAt(cell.x + 1, cell.y);
-      const diagTL = poly.hasCellAt(cell.x - 1, cell.y - 1);
-      const diagTR = poly.hasCellAt(cell.x + 1, cell.y - 1);
-      const diagBL = poly.hasCellAt(cell.x - 1, cell.y + 1);
-      const diagBR = poly.hasCellAt(cell.x + 1, cell.y + 1);
-
-      const tileIndices = getBuildingTileIndices(
-        up, down, left, right, diagTL, diagTR, diagBL, diagBR,
-      );
-
-      const px = ox + cell.x * CS;
-      const py = oy + cell.y * CS;
-
-      for (const idx of tileIndices) {
-        const sprite = new Sprite(frames[idx]);
-        sprite.position.set(px, py);
-        sprite.roundPixels = true;
-        sprite.scale.set(scale);
-        layer.addChild(sprite);
-      }
-    }
-  }
-
-  private drawLockedSlot(poly: Polyomino, ox: number, oy: number, cost: number, _slotType: string, color: number): void {
-    // Tinted fill — use flat rects (no rounded corners) masked by poly shape
-    const fillRects = new Graphics();
-    for (const cell of poly.cells) {
-      fillRects.rect(ox + cell.x * CS, oy + cell.y * CS, CS, CS);
-    }
-    fillRects.fill(color);
-    fillRects.alpha = 0.12;
-    const fillMask = new Graphics();
-    this.drawPolyShape(fillMask, poly, ox, oy);
-    fillMask.fill(0xffffff);
-    this.buildingLayer.addChild(fillMask);
-    fillRects.mask = fillMask;
-    this.buildingLayer.addChild(fillRects);
-
-    // Perimeter outline only (no internal cell borders)
     const outline = new Graphics();
-    for (const cell of poly.cells) {
-      const cx = ox + cell.x * CS;
-      const cy = oy + cell.y * CS;
-      if (!poly.hasCellAt(cell.x, cell.y - 1)) { outline.moveTo(cx, cy); outline.lineTo(cx + CS, cy); }
-      if (!poly.hasCellAt(cell.x + 1, cell.y)) { outline.moveTo(cx + CS, cy); outline.lineTo(cx + CS, cy + CS); }
-      if (!poly.hasCellAt(cell.x, cell.y + 1)) { outline.moveTo(cx, cy + CS); outline.lineTo(cx + CS, cy + CS); }
-      if (!poly.hasCellAt(cell.x - 1, cell.y)) { outline.moveTo(cx, cy); outline.lineTo(cx, cy + CS); }
-    }
+    outline.roundRect(ox, oy, w, h, 6);
     outline.stroke({ color, alpha: 0.35, width: 1.5 });
     this.buildingLayer.addChild(outline);
-
-    const centerX = ox + (poly.boundingBox.width * CS) / 2;
-    const centerY = oy + (poly.boundingBox.height * CS) / 2;
-
-    // Type label
-    const typeLabel = new Text({
-      text: _slotType === 'factory' ? 'Factory' : 'Storage',
-      style: new TextStyle({ fontFamily: 'Space Mono, monospace', fontSize: 8, fontWeight: '600', fill: color }),
-      resolution: 4,
-    });
-    typeLabel.anchor.set(0.5);
-    typeLabel.position.set(centerX, centerY - 8);
-    this.buildingLayer.addChild(typeLabel);
-
-    // Cost label
-    const label = new Text({
-      text: formatNumber(cost),
-      style: new TextStyle({ fontFamily: 'Space Mono, monospace', fontSize: 9, fontWeight: '600', fill: COLORS.ACCENT_YELLOW }),
-      resolution: 4,
-    });
-    label.anchor.set(0.5);
-    label.position.set(centerX, centerY + 5);
-    this.buildingLayer.addChild(label);
   }
 
-  // --- Decorations ---
+  // --- Trucks (sprite-based) ---
 
-  private renderDecorations(decorations: CityNode[]): void {
-    for (const node of decorations) {
-      if (node.buildingType === 'decoration') {
-        this.renderTree(node);
-      } else if (node.buildingType === 'house') {
-        this.renderHouse(node);
-      }
-    }
-  }
-
-  private renderTree(node: CityNode): void {
-    const px = node.position.x * CS + CS / 2;
-    const py = node.position.y * CS + CS / 2;
-    const r = CS * 0.2;
-
-    const shadow = new Graphics();
-    shadow.circle(px + 1.5, py + 1.5, r);
-    shadow.fill({ color: 0x000000, alpha: 0.15 });
-    this.decorLayer.addChild(shadow);
-
-    const tree = new Graphics();
-    tree.circle(px, py, r);
-    tree.fill({ color: node.color, alpha: 0.45 });
-    this.decorLayer.addChild(tree);
-  }
-
-  private renderHouse(node: CityNode): void {
-    this.drawBuilding(node.polyomino, node.position.x * CS, node.position.y * CS, node.color, this.decorLayer, 'house');
-  }
-
-  // --- Transport ---
-
-  private renderRouteLines(routes: readonly TransportRoute[]): void {
-    if (routes.length === 0) return;
-    const line = new Graphics();
-    for (const route of routes) {
+  private renderTruckRouteLines(): void {
+    if (this.truckData.length === 0) return;
+    for (const { truck, route } of this.truckData) {
       if (route.path.length < 2) continue;
+      const line = new Graphics();
+      const color = getTruckColor(truck.colorVariant).light;
       line.moveTo(route.path[0].x * CS + CS / 2, route.path[0].y * CS + CS / 2);
       for (let i = 1; i < route.path.length; i++) {
         line.lineTo(route.path[i].x * CS + CS / 2, route.path[i].y * CS + CS / 2);
       }
-      line.stroke({ color: route.vehicle?.type.color ?? COLORS.TEXT_DIM, alpha: 0.3, width: 2 });
+      line.stroke({ color, alpha: 0.35, width: 4 });
+      this.vehicleLayer.addChild(line);
     }
-    this.buildingLayer.addChild(line);
   }
 
-  private renderVehicles(routes: readonly TransportRoute[]): void {
-    this.vehicleLayer.removeChildren();
-    for (const route of routes) {
-      if (!route.vehicle) continue;
-      const pos = route.getVehiclePosition();
-      if (!pos) continue;
+  private renderTrucks(): void {
+    const alpha = this.truckInterpolationAlpha;
 
-      const px = pos.x * CS + CS / 2;
-      const py = pos.y * CS + CS / 2;
-      const vSize = CS * 0.45;
-      const color = route.vehicle.type.color;
+    for (const { truck, route } of this.truckData) {
+      if (truck.state === 'idle') continue;
+      if (route.path.length === 0) continue;
 
-      const shadow = new Graphics();
-      shadow.roundRect(px - vSize / 2 + 1.5, py - vSize * 0.3 + 1.5, vSize, vSize * 0.6, 4);
-      shadow.fill({ color: 0x000000, alpha: SHADOW_ALPHA });
-      this.vehicleLayer.addChild(shadow);
+      let pos: Vector2;
+      let dir: Vector2;
 
-      const body = new Graphics();
-      body.roundRect(px - vSize / 2, py - vSize * 0.3, vSize, vSize * 0.6, 4);
-      body.fill(color);
-      this.vehicleLayer.addChild(body);
+      const isMoving = truck.state === 'moving_to_dest' || truck.state === 'moving_to_origin';
+      const wasMoving = truck.prevState === 'moving_to_dest' || truck.prevState === 'moving_to_origin';
 
-      const ws = new Graphics();
-      ws.roundRect(px - vSize / 2 + 2, py - vSize * 0.3 + 2, vSize * 0.3, vSize * 0.6 - 4, 2);
-      ws.fill({ color: 0xffffff, alpha: 0.3 });
-      this.vehicleLayer.addChild(ws);
+      if (isMoving) {
+        const reverse = truck.state === 'moving_to_origin';
+        if (wasMoving && truck.prevState === truck.state) {
+          // Interpolate between previous and current progress for smooth sub-tick movement
+          const interpProgress = truck.prevProgress + (truck.progress - truck.prevProgress) * alpha;
+          ({ pos, dir } = route.getPositionAndDirection(interpProgress, reverse));
+        } else {
+          ({ pos, dir } = route.getPositionAndDirection(truck.progress, reverse));
+        }
+      } else if (truck.state === 'loading') {
+        pos = route.path[0];
+        dir = route.path.length > 1
+          ? new Vector2(route.path[1].x - route.path[0].x, route.path[1].y - route.path[0].y)
+          : new Vector2(1, 0);
+      } else if (truck.state === 'unloading') {
+        const last = route.path[route.path.length - 1];
+        const prev = route.path[Math.max(0, route.path.length - 2)];
+        pos = last;
+        dir = new Vector2(last.x - prev.x, last.y - prev.y);
+        if (dir.x === 0 && dir.y === 0) dir = new Vector2(1, 0);
+      } else {
+        continue;
+      }
+
+      // Sprite frames: 0=up, 1=down, 2=right, 3=left
+      // Lane offsets: always on the right side of the road
+      let dirIdx: number;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (Math.abs(dir.x) >= Math.abs(dir.y)) {
+        if (dir.x >= 0) {
+          dirIdx = 2; // right
+          offsetY = 12;   // right lane
+        } else {
+          dirIdx = 3; // left
+          offsetY = -12;
+        }
+      } else {
+        if (dir.y >= 0) {
+          dirIdx = 1; // down
+          offsetX = -16;
+        } else {
+          dirIdx = 0; // up
+          offsetX = 16;
+        }
+      }
+
+      const px = pos.x * CS + CS / 2 + offsetX;
+      const py = pos.y * CS + CS / 2 + offsetY;
+
+      const frames = TextureCache.getTruckFrames(truck.spriteKey, truck.colorVariant);
+      if (frames && frames[dirIdx]) {
+        const sprite = new Sprite(frames[dirIdx]);
+        sprite.anchor.set(0.5);
+        sprite.position.set(px, py);
+        sprite.roundPixels = true;
+        sprite.scale.set(CS / 16);
+        sprite.zIndex = py; // Y-sort: trucks lower on screen render on top
+        this.vehicleLayer.addChild(sprite);
+      } else {
+        // Fallback: simple colored rectangle
+        const g = new Graphics();
+        g.roundRect(px - 10, py - 6, 20, 12, 3);
+        g.fill(COLORS.ACCENT_YELLOW);
+        g.zIndex = py;
+        this.vehicleLayer.addChild(g);
+      }
     }
   }
 
@@ -373,11 +462,11 @@ export class CityRenderer {
 
   clearPaintPreview(): void {
     this.paintCells = [];
-    this.paintPreviewLayer.removeChildren();
+    this.paintPreviewLayer.removeChildren().forEach(c => c.destroy({ children: true }));
   }
 
   private renderPaintPreview(): void {
-    this.paintPreviewLayer.removeChildren();
+    this.paintPreviewLayer.removeChildren().forEach(c => c.destroy({ children: true }));
     if (this.paintCells.length === 0) return;
 
     const cellSet = new Set(this.paintCells.map(c => c.toKey()));
@@ -415,7 +504,113 @@ export class CityRenderer {
     this.paintPreviewLayer.addChild(outline);
   }
 
+  // --- Alert & Name Overlay ---
+
+  private renderOverlayIcons(allSlots: CitySlot[]): void {
+    this.uiOverlay.removeChildren().forEach(c => c.destroy({ children: true }));
+    this._labelContainers.clear();
+    this._hoveredSlotKey = null;
+
+    // Build per-type index for numbering (Factory 1, Factory 2, etc.)
+    const typeCounters = new Map<string, number>();
+
+    for (const slot of allSlots) {
+      const key = slot.slotKey;
+      const r = slot.getRenderRect();
+      const oy = r.y;
+      const cx = r.x + r.w / 2;
+
+      // Determine label text
+      let labelText: string | null = null;
+      if (slot.purchased) {
+        labelText = this.buildingNames.get(key) ?? slot.shopConfig?.name ?? null;
+      } else {
+        const idx = (typeCounters.get(slot.slotType) ?? 0) + 1;
+        typeCounters.set(slot.slotType, idx);
+        const typeName = slot.slotType === 'factory' ? 'Factory' : slot.slotType === 'storage' ? 'Storage' : 'Shop';
+        labelText = `${typeName} ${idx} – ${formatMoney(slot.cost)}`;
+      }
+
+      if (labelText) {
+        const slotColor = slot.slotType === 'factory' ? COLORS.FACTORY
+          : slot.slotType === 'shop' ? COLORS.SHOP
+          : COLORS.STORAGE;
+
+        const label = new Text({
+          text: labelText,
+          style: new TextStyle({
+            fontFamily: FONT_UI,
+            fontSize: 10,
+            fontWeight: '600',
+            fill: slotColor,
+          }),
+          resolution: textResolution(),
+        });
+        label.anchor.set(0.5, 1);
+        label.position.set(cx, oy - 6);
+
+        // Small bg behind the label, tinted to slot color
+        const labelBg = new Graphics();
+        const lw = label.width + 8;
+        const lh = label.height + 4;
+        const lbx = cx - lw / 2;
+        const lby = oy - 6 - lh + 2;
+        labelBg.roundRect(lbx, lby, lw, lh, 3);
+        labelBg.fill({ color: this.darken(slotColor, 0.7), alpha: 0.9 });
+
+        const labelGroup = new Container();
+        labelGroup.addChild(labelBg);
+        labelGroup.addChild(label);
+        this.uiOverlay.addChild(labelGroup);
+
+        // Store ref for hover scale effect (cx/cy = visual center of the label)
+        const centerX = cx;
+        const centerY = lby + lh / 2;
+        this._labelContainers.set(key, { container: labelGroup, cx: centerX, cy: centerY });
+      }
+
+      // Alert badge (purchased only)
+      if (!slot.purchased) continue;
+      const alert = this.alertData.get(slot.slotKey);
+      if (alert) {
+        const badgeY = labelText ? oy - 22 : oy - 4;
+        const badge = new Graphics();
+        badge.circle(cx, badgeY, 10);
+        badge.fill({ color: COLORS.ACCENT_RED, alpha: 0.9 });
+        badge.stroke({ color: 0xffffff, width: 1.5, alpha: 0.6 });
+        this.uiOverlay.addChild(badge);
+
+        const icon = new Text({
+          text: '!',
+          style: new TextStyle({
+            fontFamily: FONT_MONO,
+            fontSize: 12,
+            fontWeight: '700',
+            fill: 0xffffff,
+          }),
+          resolution: textResolution(),
+        });
+        icon.anchor.set(0.5);
+        icon.position.set(cx, badgeY);
+        this.uiOverlay.addChild(icon);
+      }
+    }
+  }
+
+  /** Spawn a floating price label above a building slot */
+  spawnFloatingText(slotKey: string, amount: number, color: number, allSlots: CitySlot[]): void {
+    const slot = allSlots.find(s => s.slotKey === slotKey || s.position.toKey() === slotKey);
+    if (!slot) return;
+    const r = slot.getRenderRect();
+    this.floatingText.spawn(r.x + r.w / 2, r.y - 8, amount, color);
+  }
+
+  updateFloatingText(deltaMs: number): void {
+    this.floatingText.update(deltaMs);
+  }
+
   destroy(): void {
+    this.floatingText.destroy();
     this.container.destroy({ children: true });
   }
 }

@@ -1,11 +1,14 @@
 import { SaveManager } from './SaveManager';
 import { TickEngine } from './TickEngine';
 import { Wallet } from '@/economy/Wallet';
+import { getCurrencySymbol, setCurrencySymbol, type CurrencySymbol } from '@/utils/currency';
 import { Market } from '@/economy/Market';
 import { RecipeBook } from '@/simulation/RecipeBook';
 import { RecipeRegistry } from '@/simulation/RecipeRegistry';
+import type { ResourceRegistry } from '@/simulation/Resource';
 import { QuestManager } from '@/economy/QuestManager';
 import { TalentTree } from '@/economy/TalentTree';
+import { XPManager } from '@/economy/XPManager';
 import { Factory, type FactorySaveData } from '@/simulation/Factory';
 import { Machine } from '@/simulation/Machine';
 import { Storage } from '@/simulation/Storage';
@@ -44,11 +47,20 @@ export interface GameSaveData {
   questProgress?: import('@/economy/QuestManager').QuestProgress[];
   talentTree?: string[];
   tutorialDone?: boolean;
+  /** Fleet data per city */
+  fleets?: Record<string, import('@/transport/FleetManager').FleetSaveData>;
+  /** Custom building names: key → name */
+  buildingNames?: Record<string, string>;
+  /** Currency symbol preference */
+  currencySymbol?: string;
+  /** XP progression */
+  xp?: { totalXP: number };
 }
 
 export interface GameSaveContext {
   wallet: Wallet;
   market: Market;
+  resourceRegistry: ResourceRegistry;
   recipeBook: RecipeBook;
   recipeRegistry: RecipeRegistry;
   questManager: QuestManager;
@@ -63,6 +75,9 @@ export interface GameSaveContext {
   machines: MachineDefinition[];
   uiManager: UIManager;
   computeBorderContext: (slot: CitySlot, layout?: any) => FactoryBorderContext;
+  fleetManagers: Map<string, import('@/transport/FleetManager').FleetManager>;
+  buildingNames: Map<string, string>;
+  xpManager: XPManager;
 }
 
 export class GameSaveSystem {
@@ -84,18 +99,18 @@ export class GameSaveSystem {
       }
     }
 
-    // Collect purchased factory slots per city
+    // Collect purchased factory slots per city (saved by slotKey e.g. "factory_0")
     const purchasedSlots: Record<string, string[]> = {};
     const purchasedStorageSlots: Record<string, string[]> = {};
     for (const [cityId, cityView] of ctx.cityViews) {
       const boughtFactories = cityView.layout.factorySlots
         .filter(s => s.purchased)
-        .map(s => s.position.toKey());
+        .map(s => s.slotKey);
       if (boughtFactories.length > 0) purchasedSlots[cityId] = boughtFactories;
 
       const boughtStorages = cityView.layout.storageSlots
         .filter(s => s.purchased)
-        .map(s => s.position.toKey());
+        .map(s => s.slotKey);
       if (boughtStorages.length > 0) purchasedStorageSlots[cityId] = boughtStorages;
     }
 
@@ -176,7 +191,34 @@ export class GameSaveSystem {
       questProgress: ctx.questManager.serialize(),
       talentTree: ctx.talentTree.serialize(),
       tutorialDone,
+      fleets: this.serializeFleets(),
+      buildingNames: Object.fromEntries(ctx.buildingNames),
+      currencySymbol: getCurrencySymbol(),
+      xp: ctx.xpManager.serialize(),
     };
+  }
+
+  private serializeFleets(): Record<string, import('@/transport/FleetManager').FleetSaveData> {
+    const result: Record<string, import('@/transport/FleetManager').FleetSaveData> = {};
+
+    // Serialize active fleet managers
+    for (const [cityId, fleet] of this.ctx.fleetManagers) {
+      const data = fleet.serialize();
+      if (data.trucks.length > 0 || data.routes.length > 0) {
+        result[cityId] = data;
+      }
+    }
+
+    // Preserve fleet data for cities not yet visited this session
+    if (this.pendingSave?.fleets) {
+      for (const [cityId, data] of Object.entries(this.pendingSave.fleets)) {
+        if (!result[cityId]) {
+          result[cityId] = data;
+        }
+      }
+    }
+
+    return result;
   }
 
   applySaveData(save: GameSaveData): void {
@@ -215,6 +257,20 @@ export class GameSaveSystem {
       }
     }
 
+    if (save.buildingNames) {
+      for (const [k, v] of Object.entries(save.buildingNames)) {
+        ctx.buildingNames.set(k, v);
+      }
+    }
+
+    if (save.xp) {
+      ctx.xpManager.deserialize(save.xp);
+    }
+
+    if (save.currencySymbol) {
+      setCurrencySymbol(save.currencySymbol as CurrencySymbol);
+    }
+
     this.pendingSave = save;
   }
 
@@ -223,12 +279,13 @@ export class GameSaveSystem {
     if (!this.pendingSave) return;
     const ctx = this.ctx;
 
-    // Restore purchased factory slots
+    // Restore purchased factory slots (keyed by slotKey e.g. "factory_0")
     const slotKeys = this.pendingSave.purchasedSlots[cityId];
     if (slotKeys) {
       const keySet = new Set(slotKeys);
       for (const slot of cityView.layout.factorySlots) {
-        if (keySet.has(slot.position.toKey())) {
+        // Support both new format ("factory_0") and legacy format ("0,0")
+        if (keySet.has(slot.slotKey) || keySet.has(slot.position.toKey())) {
           slot.purchased = true;
         }
       }
@@ -239,7 +296,7 @@ export class GameSaveSystem {
     if (storageSlotKeys) {
       const keySet = new Set(storageSlotKeys);
       for (const slot of cityView.layout.storageSlots) {
-        if (keySet.has(slot.position.toKey())) {
+        if (keySet.has(slot.slotKey) || keySet.has(slot.position.toKey())) {
           slot.purchased = true;
         }
       }
@@ -249,20 +306,23 @@ export class GameSaveSystem {
 
     // Restore storage data for this city
     if (this.pendingSave.storages) {
-      const prefix = `${cityId}_storage_`;
       for (const sd of this.pendingSave.storages) {
-        if (!sd.key.startsWith(prefix)) continue;
-        const posKey = sd.key.slice(prefix.length);
+        if (!sd.key.startsWith(`${cityId}_`)) continue;
+        // Extract slotKey from composite key (e.g. "bramfeld_storage_0" → "storage_0")
+        const slotKey = sd.key.slice(cityId.length + 1);
         const slot = cityView.layout.storageSlots.find(
-          s => s.position.toKey() === posKey && s.purchased,
+          s => s.slotKey === slotKey && s.purchased,
         );
         if (!slot) continue;
 
-        let storage = ctx.storages.get(sd.key);
+        // Use the canonical key (in case save used legacy format)
+        const canonicalKey = `${cityId}_${slot.slotKey}`;
+        let storage = ctx.storages.get(canonicalKey);
         if (!storage) {
-          storage = new Storage(slot.polyomino.cells.length);
+          storage = new Storage(slot.cellCount);
           storage.setMarket(ctx.market);
-          ctx.storages.set(sd.key, storage);
+          storage.setResourceRegistry(ctx.resourceRegistry);
+          ctx.storages.set(canonicalKey, storage);
           ctx.tickEngine.register(storage);
         }
         (storage as any)._upgradeLevel = sd.upgradeLevel;
@@ -276,18 +336,21 @@ export class GameSaveSystem {
     for (const [factoryKey, factoryData] of Object.entries(this.pendingSave.factories)) {
       if (!factoryKey.startsWith(cityId + '_')) continue;
 
-      const posKey = factoryKey.slice(cityId.length + 1);
+      // Extract slotKey from composite key (e.g. "bramfeld_factory_0" → "factory_0")
+      const slotKey = factoryKey.slice(cityId.length + 1);
       const slot = cityView.layout.factorySlots.find(
-        s => s.position.toKey() === posKey && s.purchased,
+        s => s.slotKey === slotKey && s.purchased,
       );
       if (!slot) continue;
 
-      let factory = ctx.factories.get(factoryKey);
+      // Use the canonical key
+      const canonicalKey = `${cityId}_${slot.slotKey}`;
+      let factory = ctx.factories.get(canonicalKey);
       if (!factory) {
         const borderContext = ctx.computeBorderContext(slot, cityView.layout);
-        factory = new Factory(factoryKey, slot.polyomino, borderContext);
-        ctx.factories.set(factoryKey, factory);
-        ctx.factoryCityMap.set(factoryKey, cityId);
+        factory = new Factory(canonicalKey, slot.toInteriorPolyomino(), borderContext);
+        ctx.factories.set(canonicalKey, factory);
+        ctx.factoryCityMap.set(canonicalKey, cityId);
         ctx.tickEngine.register(factory);
       }
 
@@ -296,6 +359,14 @@ export class GameSaveSystem {
         if (!def) return null;
         return new Machine(def, pos, ctx.recipeRegistry, ctx.recipeBook);
       });
+    }
+
+    // Restore fleet data for this city
+    if (this.pendingSave.fleets?.[cityId]) {
+      const fleet = ctx.fleetManagers.get(cityId);
+      if (fleet) {
+        fleet.deserialize(this.pendingSave.fleets[cityId], cityView.layout.roadNetwork);
+      }
     }
   }
 

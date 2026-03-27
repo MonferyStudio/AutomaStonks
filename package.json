@@ -1,14 +1,37 @@
 {
-  "name": "automation",
+  "name": "automastonks",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:web": "tsc && vite build",
+    "build:desktop": "tsc && vite build && electron-builder --win portable",
+    "build:apk": "tsc && vite build && npx cap sync android && cd android && gradlew.bat assembleDebug",
     "preview": "vite preview"
   },
+  "build": {
+    "appId": "com.monferystudio.automastonks",
+    "productName": "Automastonks",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
   "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "electron": "^41.0.0",
+    "electron-builder": "^26.8.1",
     "typescript": "~5.9.3",
     "vite": "^5.4.21"
   },

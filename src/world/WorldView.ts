@@ -21,11 +21,9 @@ export class WorldView {
     this.camera = new CameraController(this.worldContainer);
 
     const generator = new WorldGenerator();
-    const { worldMap, biomeMap } = generator.generate();
-    this.worldMap = worldMap;
+    this.worldMap = generator.generate();
 
     this.renderer = new WorldRenderer();
-    this.renderer.setBiomeMap(biomeMap);
     this.worldContainer.addChild(this.renderer.container);
   }
 

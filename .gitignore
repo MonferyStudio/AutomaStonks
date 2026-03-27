@@ -7,9 +7,15 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
+dist-electron
+
+# Local env / vite
 *.local
 
 # Editor directories and files
@@ -22,3 +28,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code (AI tool — sessions, memory, settings)
+.claude/
+
+# Dev tools & generators (Aseprite scripts, map tools)
+tools/
+*.bat
+
+# Deployment configs (platform-specific, not core source)
+android/
+electron/
+capacitor.config.ts
+
+# Temp / work files
+tile_guide.html
+tile_mapper.html
+tile_preview.png

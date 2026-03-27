@@ -31,42 +31,7 @@ export class AutoSupplySystem {
   }
 
   private tick(): void {
-    for (const [factoryKey, factory] of this.factories) {
-      // Auto-sell output ports
-      const outputPorts = factory.getIOPorts().filter((p) => p.portType === 'output');
-      for (const port of outputPorts) {
-        if (port.hasItem()) {
-          const item = port.extractItem();
-          if (item) {
-            this.shop.sell(item);
-          }
-        }
-      }
-
-      // Auto-supply input ports with configured resource
-      const inputPorts = factory.getIOPorts().filter(
-        (p) => p.portType === 'input' && p.resourceFilter && !p.hasItem(),
-      );
-      if (inputPorts.length === 0) continue;
-
-      const cityId = this.factoryCityMap.get(factoryKey);
-      if (!cityId) continue;
-      const cityStorages = this.getStoragesForCity(cityId);
-
-      for (const port of inputPorts) {
-        const resId = port.resourceFilter!;
-
-        for (const storage of cityStorages) {
-          if (storage.getStock(resId) > 0) {
-            const taken = storage.withdraw(resId, 1);
-            if (taken > 0) {
-              port.acceptItem(new ItemStack(resId, 1));
-              eventBus.emit('StorageUpdated', { storageId: storage.id });
-              break;
-            }
-          }
-        }
-      }
-    }
+    // Output ports are now buffered for truck pickup via FleetManager.
+    // No auto-sell — trucks handle factory→shop transport.
   }
 }

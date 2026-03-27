@@ -138,6 +138,17 @@ export class Polyomino {
     return cells.map((c) => new Vector2(c.x - minX, c.y - minY));
   }
 
+  /** Create a simple rectangular polyomino of w×h cells */
+  static fromRect(w: number, h: number): Polyomino {
+    const cells: Vector2[] = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        cells.push(new Vector2(x, y));
+      }
+    }
+    return new Polyomino(cells);
+  }
+
   static fromPattern(pattern: string): Polyomino {
     const cells: Vector2[] = [];
     const lines = pattern.trim().split('\n');

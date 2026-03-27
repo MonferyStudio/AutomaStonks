@@ -1,15 +1,28 @@
-import { Graphics, Container } from 'pixi.js';
+import { Graphics, Container, Sprite } from 'pixi.js';
 import { COLORS, SHADOW_OFFSET, SHADOW_ALPHA, CELL_SIZE_PX } from '@/utils/Constants';
 import type { ResourceDefinition, ResourceShape } from '@/simulation/Resource';
 import { Direction } from '@/utils/Direction';
+import { TextureCache } from './TextureCache';
 
-const ITEM_SIZE = 12;
+const ITEM_SIZE = 32;
 const ITEM_SHADOW_OFFSET = 1.5;
 
 export class SpriteFactory {
   createItemGraphic(resource: ResourceDefinition): Container {
     const container = new Container();
 
+    // Try sprite-based rendering first
+    const tex = TextureCache.getItemTexture(resource.id);
+    if (tex) {
+      const sprite = new Sprite(tex);
+      sprite.width = ITEM_SIZE;
+      sprite.height = ITEM_SIZE;
+      sprite.anchor.set(0.5, 0.5);
+      container.addChild(sprite);
+      return container;
+    }
+
+    // Fallback: programmatic shape
     const shadow = new Graphics();
     this.drawResourceShape(shadow, resource.shape, 0x000000, ITEM_SIZE);
     shadow.alpha = SHADOW_ALPHA;
@@ -47,6 +60,48 @@ export class SpriteFactory {
         g.fill(color);
         break;
     }
+  }
+
+  /** Create a Pixi item sprite/shape at given size, positioned at (0,0) top-left. For UI panels. */
+  static createItemIcon(resource: ResourceDefinition, size: number): Container {
+    const container = new Container();
+    const tex = TextureCache.getItemTexture(resource.id);
+    if (tex) {
+      const sprite = new Sprite(tex);
+      sprite.width = size;
+      sprite.height = size;
+      container.addChild(sprite);
+      return container;
+    }
+    // Fallback shape centered in the size box
+    const g = new Graphics();
+    const half = size / 2;
+    const r = size * 0.2;
+    switch (resource.shape) {
+      case 'square':
+        g.roundRect(half * 0.3, half * 0.3, size * 0.7, size * 0.7, r);
+        g.fill(resource.color);
+        break;
+      case 'rect':
+        g.roundRect(half * 0.1, half * 0.4, size * 0.8, size * 0.5, r * 0.6);
+        g.fill(resource.color);
+        break;
+      case 'circle':
+        g.circle(half, half, half * 0.4);
+        g.fill(resource.color);
+        break;
+      case 'cloud':
+        g.circle(half - 2, half, half * 0.35);
+        g.circle(half + 2, half - 1, half * 0.3);
+        g.circle(half + 1, half + 2, half * 0.25);
+        g.fill(resource.color);
+        break;
+      default:
+        g.circle(half, half, half * 0.4);
+        g.fill(resource.color);
+    }
+    container.addChild(g);
+    return container;
   }
 
   createBeltGraphic(direction: Direction, tier: number = 1): Container {

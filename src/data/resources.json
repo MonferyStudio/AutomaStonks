@@ -1,22 +1,45 @@
 [
-  { "id": "wood_log", "name": "Wood Log", "color": 5526612, "shape": "square", "category": "solid", "basePrice": 5, "sellPrice": 3, "tier": 0 },
-  { "id": "plank", "name": "Plank", "color": 14729540, "shape": "rect", "category": "solid", "basePrice": 12, "sellPrice": 8, "tier": 1 },
-  { "id": "sawdust", "name": "Sawdust", "color": 13808724, "shape": "circle", "category": "solid", "basePrice": 2, "sellPrice": 1, "tier": 1 },
-  { "id": "nail", "name": "Nail", "color": 8421504, "shape": "rect", "category": "solid", "basePrice": 8, "sellPrice": 5, "tier": 1 },
-  { "id": "screw", "name": "Screw", "color": 9868950, "shape": "rect", "category": "solid", "basePrice": 10, "sellPrice": 7, "tier": 1 },
-  { "id": "chair", "name": "Chair", "color": 11689260, "shape": "square", "category": "bulky", "basePrice": 0, "sellPrice": 45, "tier": 2 },
-  { "id": "table", "name": "Table", "color": 9786436, "shape": "square", "category": "bulky", "basePrice": 0, "sellPrice": 65, "tier": 2 },
-  { "id": "wheat", "name": "Wheat", "color": 14729283, "shape": "circle", "category": "solid", "basePrice": 4, "sellPrice": 2, "tier": 0 },
-  { "id": "flour", "name": "Flour", "color": 15790320, "shape": "circle", "category": "solid", "basePrice": 10, "sellPrice": 6, "tier": 1 },
-  { "id": "water", "name": "Water", "color": 5025535, "shape": "circle", "category": "liquid", "basePrice": 2, "sellPrice": 1, "tier": 0 },
-  { "id": "dough", "name": "Dough", "color": 15786836, "shape": "circle", "category": "solid", "basePrice": 0, "sellPrice": 12, "tier": 1 },
-  { "id": "bread", "name": "Bread", "color": 14514740, "shape": "square", "category": "solid", "basePrice": 0, "sellPrice": 25, "tier": 2 },
-  { "id": "tomato", "name": "Tomato", "color": 14828838, "shape": "circle", "category": "fragile", "basePrice": 6, "sellPrice": 4, "tier": 0 },
-  { "id": "tomato_sauce", "name": "Tomato Sauce", "color": 13382400, "shape": "circle", "category": "liquid", "basePrice": 0, "sellPrice": 15, "tier": 1 },
-  { "id": "iron_ore", "name": "Iron Ore", "color": 7829367, "shape": "square", "category": "solid", "basePrice": 8, "sellPrice": 5, "tier": 0 },
-  { "id": "iron_ingot", "name": "Iron Ingot", "color": 10066329, "shape": "rect", "category": "solid", "basePrice": 20, "sellPrice": 14, "tier": 1 },
-  { "id": "iron_plate", "name": "Iron Plate", "color": 11184810, "shape": "rect", "category": "solid", "basePrice": 0, "sellPrice": 22, "tier": 2 },
-  { "id": "olive", "name": "Olive", "color": 5600064, "shape": "circle", "category": "solid", "basePrice": 7, "sellPrice": 4, "tier": 0 },
-  { "id": "olive_oil", "name": "Olive Oil", "color": 11184640, "shape": "circle", "category": "liquid", "basePrice": 0, "sellPrice": 18, "tier": 1 },
-  { "id": "dust", "name": "Dust", "color": 8950436, "shape": "cloud", "category": "solid", "basePrice": 0, "sellPrice": 1, "tier": 0 }
+  { "id": "dust", "name": "Dust", "color": 8421504, "shape": "cloud", "category": "solid", "origin": "waste", "material": "misc", "storageWeight": 0.5, "basePrice": 1, "sellPrice": 0, "tier": 0 },
+
+  { "id": "wood_log", "name": "Wood Log", "color": 5526612, "shape": "square", "sprite": "wood/wood_log", "category": "solid", "origin": "natural", "material": "wood", "storageWeight": 1, "basePrice": 5, "sellPrice": 3, "tier": 0, "requiredLevel": 0 },
+  { "id": "stone", "name": "Stone", "color": 9868950, "shape": "square", "sprite": "stone/stone", "category": "solid", "origin": "natural", "material": "stone", "storageWeight": 1, "basePrice": 4, "sellPrice": 2, "tier": 0, "requiredLevel": 1 },
+  { "id": "iron_ore", "name": "Iron Ore", "color": 8476209, "shape": "square", "sprite": "metal/iron_ore", "category": "solid", "origin": "natural", "material": "metal", "storageWeight": 1, "basePrice": 8, "sellPrice": 5, "tier": 0, "requiredLevel": 2 },
+  { "id": "copper_ore", "name": "Copper Ore", "color": 11299654, "shape": "square", "sprite": "metal/copper_ore", "category": "solid", "origin": "natural", "material": "metal", "storageWeight": 1, "basePrice": 10, "sellPrice": 6, "tier": 0, "requiredLevel": 3 },
+  { "id": "gold_ore", "name": "Gold Ore", "color": 16766720, "shape": "square", "sprite": "metal/gold_ore", "category": "solid", "origin": "natural", "material": "metal", "storageWeight": 1, "basePrice": 15, "sellPrice": 10, "tier": 0, "requiredLevel": 5 },
+  { "id": "leaf", "name": "Leaf", "color": 5025616, "shape": "circle", "sprite": "organic/leaf", "category": "solid", "origin": "natural", "material": "organic", "storageWeight": 0.5, "basePrice": 3, "sellPrice": 1, "tier": 0, "requiredLevel": 0 },
+
+  { "id": "plank", "name": "Plank", "color": 14729540, "shape": "rect", "sprite": "wood/plank", "category": "solid", "origin": "processed", "material": "wood", "storageWeight": 1, "basePrice": 12, "sellPrice": 8, "tier": 1 },
+  { "id": "beam", "name": "Beam", "color": 11432016, "shape": "rect", "sprite": "wood/beam", "category": "solid", "origin": "processed", "material": "wood", "storageWeight": 2, "basePrice": 28, "sellPrice": 18, "tier": 1 },
+  { "id": "paper", "name": "Paper", "color": 16316664, "shape": "rect", "sprite": "wood/paper", "category": "solid", "origin": "processed", "material": "wood", "storageWeight": 0.5, "basePrice": 20, "sellPrice": 14, "tier": 1 },
+
+  { "id": "sand", "name": "Sand", "color": 15063893, "shape": "circle", "sprite": "stone/sand", "category": "solid", "origin": "processed", "material": "stone", "storageWeight": 1, "basePrice": 8, "sellPrice": 5, "tier": 1 },
+  { "id": "stone_brick", "name": "Stone Brick", "color": 12105912, "shape": "square", "sprite": "stone/stone_brick", "category": "solid", "origin": "processed", "material": "stone", "storageWeight": 1, "basePrice": 10, "sellPrice": 7, "tier": 1 },
+  { "id": "glass", "name": "Glass", "color": 11468783, "shape": "square", "sprite": "stone/glass", "category": "fragile", "origin": "processed", "material": "stone", "storageWeight": 1, "basePrice": 22, "sellPrice": 15, "tier": 1 },
+
+  { "id": "iron_bar", "name": "Iron Bar", "color": 10987431, "shape": "rect", "sprite": "metal/iron_bar", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 18, "sellPrice": 12, "tier": 1 },
+  { "id": "iron_plate", "name": "Iron Plate", "color": 12303291, "shape": "rect", "sprite": "metal/iron_plate", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 30, "sellPrice": 20, "tier": 1 },
+  { "id": "nails", "name": "Nails", "color": 10066329, "shape": "circle", "sprite": "metal/nails", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 0.5, "basePrice": 14, "sellPrice": 10, "tier": 1 },
+
+  { "id": "copper_bar", "name": "Copper Bar", "color": 13458524, "shape": "rect", "sprite": "metal/copper_bar", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 22, "sellPrice": 14, "tier": 1 },
+  { "id": "copper_plate", "name": "Copper Plate", "color": 14509612, "shape": "rect", "sprite": "metal/copper_plate", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 35, "sellPrice": 24, "tier": 1 },
+  { "id": "copper_wire", "name": "Copper Wire", "color": 14776096, "shape": "circle", "sprite": "metal/copper_wire", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 0.5, "basePrice": 16, "sellPrice": 11, "tier": 1 },
+
+  { "id": "gold_bar", "name": "Gold Bar", "color": 16766464, "shape": "rect", "sprite": "metal/gold_bar", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 35, "sellPrice": 24, "tier": 1 },
+  { "id": "gold_plate", "name": "Gold Plate", "color": 16768256, "shape": "rect", "sprite": "metal/gold_plate", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 55, "sellPrice": 38, "tier": 1 },
+
+  { "id": "string", "name": "String", "color": 15658734, "shape": "circle", "sprite": "organic/string", "category": "solid", "origin": "processed", "material": "organic", "storageWeight": 0.5, "basePrice": 10, "sellPrice": 7, "tier": 1 },
+  { "id": "cloth", "name": "Cloth", "color": 14803425, "shape": "rect", "sprite": "organic/cloth", "category": "solid", "origin": "processed", "material": "organic", "storageWeight": 1, "basePrice": 25, "sellPrice": 18, "tier": 1 },
+
+  { "id": "bolt", "name": "Bolt", "color": 8947848, "shape": "circle", "sprite": "hardware/bolt", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 0.5, "basePrice": 16, "sellPrice": 11, "tier": 2 },
+  { "id": "gear", "name": "Gear", "color": 10066329, "shape": "circle", "sprite": "hardware/gear", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 38, "sellPrice": 26, "tier": 2 },
+  { "id": "pipe", "name": "Pipe", "color": 14509612, "shape": "rect", "sprite": "hardware/pipe", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 40, "sellPrice": 28, "tier": 2 },
+  { "id": "rope", "name": "Rope", "color": 13411358, "shape": "circle", "sprite": "hardware/rope", "category": "solid", "origin": "processed", "material": "organic", "storageWeight": 1, "basePrice": 28, "sellPrice": 20, "tier": 2 },
+  { "id": "glue", "name": "Glue", "color": 16771764, "shape": "circle", "sprite": "hardware/glue", "category": "solid", "origin": "processed", "material": "organic", "storageWeight": 0.5, "basePrice": 24, "sellPrice": 17, "tier": 2 },
+  { "id": "cable", "name": "Cable", "color": 14776096, "shape": "rect", "sprite": "hardware/cable", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 42, "sellPrice": 30, "tier": 2 },
+  { "id": "wooden_frame", "name": "Wooden Frame", "color": 11432016, "shape": "square", "sprite": "hardware/wooden_frame", "category": "solid", "origin": "processed", "material": "wood", "storageWeight": 2, "basePrice": 50, "sellPrice": 35, "tier": 2 },
+  { "id": "light_bulb", "name": "Light Bulb", "color": 16777120, "shape": "circle", "sprite": "hardware/light_bulb", "category": "fragile", "origin": "processed", "material": "metal", "storageWeight": 0.5, "basePrice": 52, "sellPrice": 36, "tier": 2 },
+
+  { "id": "hammer", "name": "Hammer", "color": 10987431, "shape": "square", "sprite": "tools/hammer", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 34, "sellPrice": 24, "tier": 2 },
+  { "id": "saw", "name": "Saw", "color": 10987431, "shape": "rect", "sprite": "tools/saw", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1, "basePrice": 48, "sellPrice": 34, "tier": 2 },
+  { "id": "shovel", "name": "Shovel", "color": 10987431, "shape": "rect", "sprite": "tools/shovel", "category": "solid", "origin": "processed", "material": "metal", "storageWeight": 1.5, "basePrice": 56, "sellPrice": 40, "tier": 2 }
 ]

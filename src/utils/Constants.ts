@@ -40,6 +40,11 @@ export const COLORS = {
   IO_OUTPUT: 0xe94560,
 } as const;
 
+/** UI font — clean sans-serif for labels, titles, buttons */
+export const FONT_UI = 'Inter, sans-serif';
+/** Mono font — for numbers, values, data */
+export const FONT_MONO = 'JetBrains Mono, monospace';
+
 export const GRID_LINE_ALPHA = 0.03;
 export const SHADOW_OFFSET = 3;
 export const SHADOW_ALPHA = 0.35;

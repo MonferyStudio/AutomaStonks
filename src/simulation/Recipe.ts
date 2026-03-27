@@ -14,4 +14,5 @@ export interface RecipeDefinition {
   inputs: RecipeInput[];
   outputs: RecipeOutput[];
   processingTicks: number;
+  requiredLevel?: number;
 }

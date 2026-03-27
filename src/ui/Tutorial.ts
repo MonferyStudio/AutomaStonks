@@ -1,16 +1,16 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI } from '@/utils/Constants';
 import { eventBus } from '@/core/EventBus';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 12,
   fontWeight: '700',
   fill: COLORS.ACCENT_YELLOW,
 });
 
 const BODY_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fill: COLORS.TEXT_PRIMARY,
   wordWrap: true,
@@ -19,7 +19,7 @@ const BODY_STYLE = new TextStyle({
 });
 
 const HINT_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 9,
   fill: COLORS.TEXT_DIM,
 });

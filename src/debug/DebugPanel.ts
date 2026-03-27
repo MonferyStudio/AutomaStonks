@@ -1,13 +1,12 @@
 import type { Game } from '@/core/Game';
+import type { CityShop, ShopDefinition } from '@/economy/CityShop';
 import { CITY_TYPES } from '@/world/CityType';
 import { COLORS, CELL_SIZE_PX as CS } from '@/utils/Constants';
 import { Vector2 } from '@/utils/Vector2';
 import { Polyomino } from '@/simulation/Polyomino';
 import { CitySlot } from '@/city/CitySlot';
-import { CityNode } from '@/city/CityNode';
 import { serializeCityLayout } from '@/city/CityLayoutData';
 import { hasCityJson } from '@/city/CityLayoutLoader';
-import { CityGenerator } from '@/city/CityGenerator';
 
 type TabId = 'world' | 'city' | 'factory' | 'general';
 type PickMode =
@@ -18,13 +17,12 @@ type PickMode =
   | 'paint_building';
 
 interface PaintState {
-  buildingType: 'factory' | 'shop' | 'storage' | 'house';
+  buildingType: 'factory' | 'shop' | 'storage';
   cells: Vector2[];
   color: number;
   cost: number;
   /** If editing an existing building, reference to it */
   editingSlot?: CitySlot;
-  editingNode?: CityNode;
   /** Original cells before editing (for cancel/restore) */
   originalCells?: Vector2[];
   originalPosition?: Vector2;
@@ -46,12 +44,14 @@ export class DebugPanel {
   private pickMode: PickMode = 'none';
   private pickCityData: { name: string; typeId: string; unlockCost: number } | null = null;
   private movingCityId: string | null = null;
-  private placeBuildingData: { type: 'factory' | 'shop' | 'storage' | 'house' | 'decoration'; polyId: string; color: number; cost: number } | null = null;
+  private placeBuildingData: { type: 'factory' | 'shop' | 'storage'; polyId: string; color: number; cost: number } | null = null;
   private paintState: PaintState | null = null;
   private banner: HTMLDivElement | null = null;
   private pickUpHandler: ((e: MouseEvent) => void) | null = null;
   private pickDownHandler: ((e: MouseEvent) => void) | null = null;
   private escHandler: ((e: KeyboardEvent) => void) | null = null;
+  private shopSidePanel: HTMLDivElement | null = null;
+  private zoneEditorPopup: HTMLDivElement | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -78,7 +78,7 @@ export class DebugPanel {
     Object.assign(this.root.style, {
       position: 'fixed', top: '44px', right: '10px', zIndex: '9998',
       width: '340px', maxHeight: 'calc(100vh - 60px)', display: 'none',
-      fontFamily: 'Space Mono, Consolas, monospace', fontSize: '11px',
+      fontFamily: 'JetBrains Mono, monospace', fontSize: '11px',
       color: '#e8e8e8', borderRadius: '8px', overflow: 'hidden',
       border: '1px solid rgba(168,85,247,0.3)',
       boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
@@ -129,6 +129,12 @@ export class DebugPanel {
   private toggle(): void {
     this.isOpen = !this.isOpen;
     this.root.style.display = this.isOpen ? 'block' : 'none';
+    // Show/hide debug overlays on the city renderer
+    const cityView = this.game.getCurrentCityView?.();
+    if (cityView) {
+      cityView.renderer.showDebugOverlay = this.isOpen;
+      cityView.renderer.markDirty();
+    }
     if (this.isOpen) this.refreshTab();
   }
 
@@ -234,6 +240,22 @@ export class DebugPanel {
     if (this.isOpen) this.refreshTab();
   }
 
+  private showBanner(message: string): void {
+    this.hideBanner();
+    this.banner = document.createElement('div');
+    this.banner.textContent = message;
+    Object.assign(this.banner.style, {
+      position: 'fixed', top: '0', left: '0', right: '0', zIndex: '10001',
+      padding: '8px 0', textAlign: 'center', background: '#a855f7',
+      color: '#fff', fontFamily: 'monospace', fontSize: '12px', fontWeight: '700',
+    } as CSSStyleDeclaration);
+    document.body.appendChild(this.banner);
+  }
+
+  private hideBanner(): void {
+    if (this.banner) { this.banner.remove(); this.banner = null; }
+  }
+
   private handlePick(screenX: number, screenY: number): void {
     // World-level pick modes
     if (this.pickMode === 'place_city' || this.pickMode === 'move_city') {
@@ -316,30 +338,25 @@ export class DebugPanel {
         }
       }
 
+      const bb = poly.boundingBox;
+      const bounds = { x: 0, y: 0, w: bb.width, h: bb.height };
       if (type === 'factory') {
-        const slot = new CitySlot('factory', pos, polyId, poly, cost);
+        const slot = new CitySlot('factory', pos, bounds, cost);
+        slot.slotIndex = layout.factorySlots.length;
         layout.factorySlots.push(slot);
       } else if (type === 'shop') {
-        const slot = new CitySlot('shop', pos, polyId, poly, cost);
+        const slot = new CitySlot('shop', pos, bounds, cost);
+        slot.slotIndex = layout.shopSlots.length;
         layout.shopSlots.push(slot);
       } else if (type === 'storage') {
-        const slot = new CitySlot('storage', pos, polyId, poly, cost);
+        const slot = new CitySlot('storage', pos, bounds, cost);
+        slot.slotIndex = layout.storageSlots.length;
         layout.storageSlots.push(slot);
-      } else if (type === 'house') {
-        const node = new CityNode('house', pos, poly, polyId, 'House', color);
-        layout.decorations.push(node);
-      } else if (type === 'decoration') {
-        const shade = 0x1a4a20 + Math.floor(Math.random() * 0x153015);
-        const node = new CityNode('decoration', pos, poly, polyId, 'Tree', shade);
-        layout.decorations.push(node);
       }
 
       cityView.renderer.markDirty();
       this.toast(`Placed ${type} (${polyId}) at (${gx}, ${gy})`);
-      // Stay in place mode for decorations to allow multi-placement
-      if (type !== 'decoration') {
-        this.cancelPickMode();
-      }
+      this.cancelPickMode();
       if (this.isOpen) this.refreshTab();
     }
   }
@@ -394,7 +411,7 @@ export class DebugPanel {
       // Check factory slots (skip the one being edited)
       for (const slot of layout.factorySlots) {
         if (ps.editingSlot && slot.id === ps.editingSlot.id) continue;
-        for (const c of slot.polyomino.cells) {
+        for (const c of slot.getCells()) {
           if (c.add(slot.position).toKey() === key) {
             this.toast('Cell occupied by factory');
             return;
@@ -404,24 +421,13 @@ export class DebugPanel {
       // Check shop slots
       for (const slot of layout.shopSlots) {
         if (ps.editingSlot && slot.id === ps.editingSlot.id) continue;
-        for (const c of slot.polyomino.cells) {
+        for (const c of slot.getCells()) {
           if (c.add(slot.position).toKey() === key) {
             this.toast('Cell occupied by shop');
             return;
           }
         }
       }
-      // Check decorations (skip the one being edited)
-      for (const deco of layout.decorations) {
-        if (ps.editingNode && deco.id === ps.editingNode.id) continue;
-        for (const c of deco.polyomino.cells) {
-          if (c.add(deco.position).toKey() === key) {
-            this.toast('Cell occupied by decoration');
-            return;
-          }
-        }
-      }
-
       ps.cells.push(pos);
     }
 
@@ -474,44 +480,41 @@ export class DebugPanel {
       const slot = ps.editingSlot;
       const idx = layout.factorySlots.indexOf(slot);
       const shopIdx = layout.shopSlots.indexOf(slot);
-      const newSlot = new CitySlot(slot.slotType, position, polyId, poly, slot.cost);
+      const bb = poly.boundingBox;
+      const newBounds = { x: 0, y: 0, w: bb.width, h: bb.height };
+      const newSlot = new CitySlot(slot.slotType, position, newBounds, slot.cost);
       newSlot.purchased = slot.purchased;
       newSlot.buildingNodeId = slot.buildingNodeId;
       const storageIdx = layout.storageSlots.indexOf(slot);
-      if (idx >= 0) layout.factorySlots[idx] = newSlot;
-      else if (shopIdx >= 0) layout.shopSlots[shopIdx] = newSlot;
-      else if (storageIdx >= 0) layout.storageSlots[storageIdx] = newSlot;
-    } else if (ps.editingNode) {
-      // Update existing decoration
-      const node = ps.editingNode;
-      const idx = layout.decorations.indexOf(node);
-      if (idx >= 0) {
-        layout.decorations[idx] = new CityNode(node.buildingType, position, poly, polyId, node.name, node.color);
-      }
+      if (idx >= 0) { newSlot.slotIndex = idx; layout.factorySlots[idx] = newSlot; }
+      else if (shopIdx >= 0) { newSlot.slotIndex = shopIdx; layout.shopSlots[shopIdx] = newSlot; }
+      else if (storageIdx >= 0) { newSlot.slotIndex = storageIdx; layout.storageSlots[storageIdx] = newSlot; }
     } else {
       // Create new building
+      const bb2 = poly.boundingBox;
+      const newBounds2 = { x: 0, y: 0, w: bb2.width, h: bb2.height };
       if (ps.buildingType === 'factory') {
-        const slot = new CitySlot('factory', position, polyId, poly, ps.cost);
+        const slot = new CitySlot('factory', position, newBounds2, ps.cost);
+        slot.slotIndex = layout.factorySlots.length;
         layout.factorySlots.push(slot);
       } else if (ps.buildingType === 'shop') {
-        const slot = new CitySlot('shop', position, polyId, poly, ps.cost);
+        const slot = new CitySlot('shop', position, newBounds2, ps.cost);
+        slot.slotIndex = layout.shopSlots.length;
         slot.purchased = true;
         layout.shopSlots.push(slot);
       } else if (ps.buildingType === 'storage') {
-        const slot = new CitySlot('storage', position, polyId, poly, ps.cost);
+        const slot = new CitySlot('storage', position, newBounds2, ps.cost);
+        slot.slotIndex = layout.storageSlots.length;
         layout.storageSlots.push(slot);
-      } else if (ps.buildingType === 'house') {
-        const node = new CityNode('house', position, poly, polyId, 'House', ps.color);
-        layout.decorations.push(node);
       }
     }
 
     cityView.renderer.clearPaintPreview();
     cityView.renderer.markDirty();
-    this.toast(`${ps.editingSlot || ps.editingNode ? 'Updated' : 'Created'} ${ps.buildingType} (${ps.cells.length} cells)`);
+    this.toast(`${ps.editingSlot ? 'Updated' : 'Created'} ${ps.buildingType} (${ps.cells.length} cells)`);
   }
 
-  private enterPaintMode(type: 'factory' | 'shop' | 'storage' | 'house', color: number, cost: number, editSlot?: CitySlot, editNode?: CityNode): void {
+  private enterPaintMode(type: 'factory' | 'shop' | 'storage', color: number, cost: number, editSlot?: CitySlot): void {
     this.cancelPickMode(); // clean up any previous mode (but won't finalize since paintState is null after cancel)
 
     const ps: PaintState = {
@@ -524,20 +527,15 @@ export class DebugPanel {
     if (editSlot) {
       ps.editingSlot = editSlot;
       // Load existing cells as absolute positions
-      ps.cells = editSlot.polyomino.cells.map(c => c.add(editSlot.position));
+      ps.cells = editSlot.getCells().map(c => c.add(editSlot.position));
       ps.originalCells = ps.cells.map(c => new Vector2(c.x, c.y));
       ps.originalPosition = new Vector2(editSlot.position.x, editSlot.position.y);
-    } else if (editNode) {
-      ps.editingNode = editNode;
-      ps.cells = editNode.polyomino.cells.map(c => c.add(editNode.position));
-      ps.originalCells = ps.cells.map(c => new Vector2(c.x, c.y));
-      ps.originalPosition = new Vector2(editNode.position.x, editNode.position.y);
     }
 
     this.paintState = ps;
     this.pickMode = 'paint_building';
 
-    const action = editSlot || editNode ? 'Editing' : 'Painting';
+    const action = editSlot ? 'Editing' : 'Painting';
     const bannerMsg = `${action} ${type} — Right-click to add/remove cells | ESC to finish`;
 
     // Show banner
@@ -1013,9 +1011,6 @@ export class DebugPanel {
     const worldView = (this.game as any).worldView;
     const worldCity = worldView?.worldMap.getCity(activeCityId);
     const polyRegistry = (this.game as any).polyominoRegistry;
-    const generator = new CityGenerator(polyRegistry);
-    const unlockCost = worldCity?.unlockCost ?? 0;
-    const cityType = worldCity?.cityType;
 
     // ── Info ──
     const infoSec = this.makeSection(`City: ${worldCity?.name ?? activeCityId}`);
@@ -1027,7 +1022,6 @@ export class DebugPanel {
       `Factories: <span style="color:#e8e8e8">${layout.factorySlots.length}</span>`,
       `Shops: <span style="color:#e8e8e8">${layout.shopSlots.length}</span>`,
       `Roads: <span style="color:#e8e8e8">${layout.roadNetwork.roadCount} cells</span>`,
-      `Decorations: <span style="color:#e8e8e8">${layout.decorations.length}</span>`,
     ].join('<br>');
     infoSec.appendChild(info);
 
@@ -1056,16 +1050,76 @@ export class DebugPanel {
     const bgSec = this.makeSection('Background Color');
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
-    colorInput.value = '#' + ((cityView.renderer as any).bgColor >>> 0).toString(16).padStart(6, '0');
+    colorInput.value = '#' + (cityView.renderer.getBgColor() >>> 0).toString(16).padStart(6, '0');
     Object.assign(colorInput.style, {
       width: '60px', height: '28px', border: '1px solid #2d3548', borderRadius: '4px',
       background: '#0d1525', cursor: 'pointer',
     } as CSSStyleDeclaration);
     colorInput.addEventListener('input', () => {
-      (cityView.renderer as any).bgColor = parseInt(colorInput.value.slice(1), 16);
-      cityView.renderer.markDirty();
+      cityView.renderer.setBgColor(parseInt(colorInput.value.slice(1), 16));
     });
     bgSec.appendChild(colorInput);
+
+    // ── Camera Bounds ──
+    const camSec = this.makeSection('Camera Bounds');
+    const camRow = document.createElement('div');
+    Object.assign(camRow.style, { display: 'flex', gap: '4px', flexWrap: 'wrap' } as CSSStyleDeclaration);
+    const cb = layout.cameraBounds ?? { x: 0, y: 0, w: layout.width * CS, h: layout.height * CS };
+    const cbxI = this.makeInput('X', camRow, '22%');
+    cbxI.value = String(cb.x);
+    const cbyI = this.makeInput('Y', camRow, '22%');
+    cbyI.value = String(cb.y);
+    const cbwI = this.makeInput('W', camRow, '22%');
+    cbwI.value = String(cb.w);
+    const cbhI = this.makeInput('H', camRow, '22%');
+    cbhI.value = String(cb.h);
+    camSec.appendChild(camRow);
+
+    const camBtnRow = document.createElement('div');
+    Object.assign(camBtnRow.style, { display: 'flex', gap: '4px', marginTop: '4px' } as CSSStyleDeclaration);
+    this.makeButton('Apply', () => {
+      const x = parseFloat(cbxI.value), y = parseFloat(cbyI.value);
+      const w = parseFloat(cbwI.value), h = parseFloat(cbhI.value);
+      if ([x, y, w, h].some(isNaN) || w <= 0 || h <= 0) { this.toast('Invalid bounds'); return; }
+      layout.cameraBounds = { x, y, w, h };
+      cityView.camera.bounds = layout.cameraBounds;
+      cityView.renderer.markDirty();
+      this.toast('Camera bounds applied');
+    }, camBtnRow);
+    this.makeButton('Clear', () => {
+      layout.cameraBounds = undefined;
+      cityView.camera.bounds = null;
+      cityView.renderer.markDirty();
+      this.toast('Camera bounds removed');
+      this.refreshTab();
+    }, camBtnRow);
+    camSec.appendChild(camBtnRow);
+
+    // ── Zoom Limits ──
+    const zoomSec = this.makeSection('Zoom Limits');
+    const zoomRow = document.createElement('div');
+    Object.assign(zoomRow.style, { display: 'flex', gap: '4px', alignItems: 'center' } as CSSStyleDeclaration);
+    const zl = layout.zoomLimits ?? { min: 0.5, max: 1.8 };
+    const zMinI = this.makeInput('Min', zoomRow, '30%');
+    zMinI.value = String(zl.min);
+    zMinI.step = '0.1';
+    const zMaxI = this.makeInput('Max', zoomRow, '30%');
+    zMaxI.value = String(zl.max);
+    zMaxI.step = '0.1';
+    this.makeButton('Apply', () => {
+      const mn = parseFloat(zMinI.value), mx = parseFloat(zMaxI.value);
+      if (isNaN(mn) || isNaN(mx) || mn <= 0 || mx <= mn) { this.toast('Invalid zoom limits'); return; }
+      layout.zoomLimits = { min: mn, max: mx };
+      cityView.camera.setZoomLimits(mn, mx);
+      this.toast(`Zoom: ${mn} – ${mx}`);
+    }, zoomRow);
+    this.makeButton('Clear', () => {
+      layout.zoomLimits = undefined;
+      cityView.camera.setZoomLimits(0.5, 1.8);
+      this.toast('Zoom limits reset');
+      this.refreshTab();
+    }, zoomRow);
+    zoomSec.appendChild(zoomRow);
 
     // ── Roads ──
     const roadSec = this.makeSection('Roads');
@@ -1078,14 +1132,6 @@ export class DebugPanel {
     this.makeButton('Erase Roads', () => {
       this.enterPickMode('remove_road', 'Right-click cells to remove roads');
     }, roadBtnRow);
-    if (cityType) {
-      this.makeButton('Regenerate', () => {
-        generator.regenerateRoads(layout, cityType, unlockCost);
-        cityView.renderer.markDirty();
-        this.toast('Roads regenerated');
-        this.refreshTab();
-      }, roadBtnRow);
-    }
     this.makeButton('Clear All', () => {
       for (const r of layout.roadNetwork.getAllRoads()) {
         layout.roadNetwork.removeRoad(r);
@@ -1110,14 +1156,12 @@ export class DebugPanel {
       this.toast('All factories purchased');
       this.refreshTab();
     }, factAddRow);
-    this.makeButton('Regenerate', () => {
-      generator.regenerateFactories(layout, unlockCost);
-      cityView.renderer.markDirty();
-      this.toast('Factories regenerated');
+    this.makeButton('+ Add Factory', () => {
+      const slot = new CitySlot('factory', new Vector2(0, 0), { x: 0, y: 0, w: 1, h: 1 }, 100);
+      slot.slotIndex = layout.factorySlots.length;
+      layout.factorySlots.push(slot);
+      this.openZoneEditor(slot, cityView);
       this.refreshTab();
-    }, factAddRow);
-    this.makeButton('Paint Factory', () => {
-      this.enterPaintMode('factory', COLORS.FACTORY, 100);
     }, factAddRow);
     factSec.appendChild(factAddRow);
 
@@ -1129,14 +1173,13 @@ export class DebugPanel {
     shopAddRow.style.display = 'flex';
     shopAddRow.style.gap = '4px';
     shopAddRow.style.marginTop = '4px';
-    this.makeButton('Regenerate', () => {
-      generator.regenerateShops(layout, unlockCost);
-      cityView.renderer.markDirty();
-      this.toast('Shops regenerated');
+    this.makeButton('+ Add Shop', () => {
+      const slot = new CitySlot('shop', new Vector2(0, 0), { x: 0, y: 0, w: 1, h: 1 }, 0);
+      slot.slotIndex = layout.shopSlots.length;
+      slot.purchased = true;
+      layout.shopSlots.push(slot);
+      this.openZoneEditor(slot, cityView);
       this.refreshTab();
-    }, shopAddRow);
-    this.makeButton('Paint Shop', () => {
-      this.enterPaintMode('shop', COLORS.SHOP, 0);
     }, shopAddRow);
     shopSec.appendChild(shopAddRow);
 
@@ -1176,98 +1219,15 @@ export class DebugPanel {
       this.toast('All storages purchased');
       this.refreshTab();
     }, storageAddRow);
-    this.makeButton('Paint Storage', () => {
+    this.makeButton('+ Add Storage', () => {
       const price = parseInt(storagePriceInput.value) || 75;
-      this.enterPaintMode('storage', COLORS.STORAGE, price);
+      const slot = new CitySlot('storage', new Vector2(0, 0), { x: 0, y: 0, w: 1, h: 1 }, price);
+      slot.slotIndex = layout.storageSlots.length;
+      layout.storageSlots.push(slot);
+      this.openZoneEditor(slot, cityView);
+      this.refreshTab();
     }, storageAddRow);
     storageSec.appendChild(storageAddRow);
-
-    // ── Houses & Decorations ──
-    const decoSec = this.makeSection('Houses & Decorations');
-    const houses = layout.decorations.filter((d: CityNode) => d.buildingType === 'house');
-    const trees = layout.decorations.filter((d: CityNode) => d.buildingType === 'decoration');
-    const decoInfo = document.createElement('div');
-    decoInfo.style.color = '#8892a4';
-    decoInfo.innerHTML = `Houses: <span style="color:#e8e8e8">${houses.length}</span> | Trees: <span style="color:#e8e8e8">${trees.length}</span>`;
-    decoSec.appendChild(decoInfo);
-
-    // Scrollable decoration list with remove buttons
-    const decoList = document.createElement('div');
-    Object.assign(decoList.style, {
-      maxHeight: '120px', overflowY: 'auto', fontSize: '9px',
-      border: '1px solid #2d3548', borderRadius: '4px', padding: '4px',
-      marginTop: '4px',
-    } as CSSStyleDeclaration);
-    for (let i = 0; i < layout.decorations.length; i++) {
-      const deco = layout.decorations[i];
-      const row = document.createElement('div');
-      Object.assign(row.style, {
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '2px 2px',
-      } as CSSStyleDeclaration);
-
-      const colorSwatch = document.createElement('span');
-      colorSwatch.style.display = 'inline-block';
-      colorSwatch.style.width = '8px';
-      colorSwatch.style.height = '8px';
-      colorSwatch.style.borderRadius = '2px';
-      colorSwatch.style.background = '#' + deco.color.toString(16).padStart(6, '0');
-      colorSwatch.style.marginRight = '4px';
-      row.appendChild(colorSwatch);
-
-      const label = document.createElement('span');
-      label.style.flex = '1';
-      label.innerHTML = `${deco.name} <span style="color:#8892a4">${deco.polyominoId} (${deco.position.x},${deco.position.y})</span>`;
-      row.appendChild(label);
-
-      const decoBtnGroup = document.createElement('div');
-      decoBtnGroup.style.display = 'flex';
-      decoBtnGroup.style.gap = '2px';
-
-      // Edit button for houses (multi-cell buildings worth editing)
-      if (deco.buildingType === 'house') {
-        decoBtnGroup.appendChild(this.makeSmallBtn('Edit', '#4dc9f6', () => {
-          this.enterPaintMode('house', deco.color, 0, undefined, deco);
-        }));
-      }
-
-      decoBtnGroup.appendChild(this.makeSmallBtn('X', '#e94560', () => {
-        layout.decorations.splice(i, 1);
-        cityView.renderer.markDirty();
-        this.toast(`Removed ${deco.name}`);
-        this.refreshTab();
-      }));
-
-      row.appendChild(decoBtnGroup);
-      decoList.appendChild(row);
-    }
-    decoSec.appendChild(decoList);
-
-    const decoBtnRow = document.createElement('div');
-    decoBtnRow.style.display = 'flex';
-    decoBtnRow.style.gap = '4px';
-    decoBtnRow.style.marginTop = '4px';
-    this.makeButton('Paint House', () => {
-      this.enterPaintMode('house', 0x356840, 0);
-    }, decoBtnRow);
-    this.makeButton('+ Tree', () => {
-      this.enterPickMode('place_building', 'Right-click to place a tree');
-      const shade = 0x1a4a20 + Math.floor(Math.random() * 0x153015);
-      this.placeBuildingData = { type: 'decoration', polyId: 'mono_1', color: shade, cost: 0 };
-    }, decoBtnRow);
-    this.makeButton('Regenerate', () => {
-      generator.regenerateDecorations(layout, unlockCost);
-      cityView.renderer.markDirty();
-      this.toast('Decorations regenerated');
-      this.refreshTab();
-    }, decoBtnRow);
-    this.makeButton('Clear Decor', () => {
-      layout.decorations.length = 0;
-      cityView.renderer.markDirty();
-      this.toast('Decorations cleared');
-      this.refreshTab();
-    }, decoBtnRow, true);
-    decoSec.appendChild(decoBtnRow);
 
     // ── Export / Persistence ──
     const exportSec = this.makeSection('Export City JSON');
@@ -1279,7 +1239,26 @@ export class DebugPanel {
     exportSec.appendChild(sourceLabel);
 
     const buildCityExport = () => {
-      const bgColor = (cityView.renderer as any).bgColor as number;
+      // Sync shop configs onto slots before serializing
+      const cityShops = (this.game as any).cityShops as Map<string, CityShop>;
+      for (const shopSlot of layout.shopSlots) {
+        const key = `${activeCityId}_${shopSlot.slotKey}`;
+        const shop = cityShops.get(key);
+        if (shop) {
+          const mods: Record<string, number> = {};
+          for (const [resId, mod] of shop.itemPriceModifiers) {
+            mods[resId] = mod;
+          }
+          shopSlot.shopConfig = {
+            name: shop.definition.name,
+            color: shop.definition.color,
+            description: shop.definition.description,
+            priceModifier: shop.definition.priceModifier,
+            itemPriceModifiers: mods,
+          };
+        }
+      }
+      const bgColor = cityView.renderer.getBgColor();
       return serializeCityLayout(layout, bgColor);
     };
 
@@ -1320,7 +1299,7 @@ export class DebugPanel {
     this.makeButton('Clear Everything', () => {
       layout.factorySlots.length = 0;
       layout.shopSlots.length = 0;
-      layout.decorations.length = 0;
+      layout.storageSlots.length = 0;
       for (const r of layout.roadNetwork.getAllRoads()) layout.roadNetwork.removeRoad(r);
       cityView.renderer.markDirty();
       this.toast('City wiped');
@@ -1347,7 +1326,7 @@ export class DebugPanel {
       const status = slot.purchased
         ? '<span style="color:#53d769">owned</span>'
         : `<span style="color:#f5c842">${slot.cost}c</span>`;
-      label.innerHTML = `${slot.polyominoId} (${slot.position.x},${slot.position.y}) [${slot.polyomino.cellCount}c] ${status}`;
+      label.innerHTML = `${slot.bounds.w}x${slot.bounds.h} (${slot.position.x},${slot.position.y}) [${slot.cellCount}c] ${status}`;
       row.appendChild(label);
 
       const btnGroup = document.createElement('div');
@@ -1380,10 +1359,17 @@ export class DebugPanel {
         }));
       }
 
-      // Edit button — enter paint mode on this slot
-      const color = type === 'factory' ? COLORS.FACTORY : type === 'storage' ? COLORS.STORAGE : COLORS.SHOP;
-      btnGroup.appendChild(this.makeSmallBtn('Edit', '#4dc9f6', () => {
-        this.enterPaintMode(slot.slotType as 'factory' | 'shop' | 'storage', color, slot.cost, slot);
+      // Shop config button — opens side panel for shop editing
+      if (type === 'shop' && slot.purchased) {
+        btnGroup.appendChild(this.makeSmallBtn('Cfg', '#f5c842', () => {
+          const cityId = (this.game as any).activeCityId as string;
+          if (cityId) this.openShopSidePanel(cityId, slot);
+        }));
+      }
+
+      // Zones button — opens zone editor popup
+      btnGroup.appendChild(this.makeSmallBtn('Zones', '#4dc9f6', () => {
+        this.openZoneEditor(slot, cityView);
       }));
 
       btnGroup.appendChild(this.makeSmallBtn('X', '#e94560', () => {
@@ -1395,10 +1381,549 @@ export class DebugPanel {
 
       row.appendChild(btnGroup);
       listContainer.appendChild(row);
+
+      // --- Interior Size editor row (factory/storage only) ---
+      if (type === 'factory' || type === 'storage') {
+        const isRow = document.createElement('div');
+        Object.assign(isRow.style, { display: 'flex', gap: '3px', alignItems: 'center', padding: '1px 6px', fontSize: '9px', color: '#8892a4' } as CSSStyleDeclaration);
+        isRow.textContent = 'int:';
+        for (const key of ['w', 'h'] as const) {
+          const inp = document.createElement('input');
+          inp.value = String(slot.interiorSize[key]);
+          Object.assign(inp.style, {
+            width: '32px', padding: '1px 2px', border: '1px solid #2d3548', borderRadius: '3px',
+            background: '#0d1525', color: '#b8c0d0', fontFamily: 'inherit', fontSize: '9px',
+            textAlign: 'right', boxSizing: 'border-box',
+          } as CSSStyleDeclaration);
+          inp.placeholder = key;
+          inp.addEventListener('change', () => {
+            const v = parseInt(inp.value);
+            if (!isNaN(v) && v > 0) {
+              slot.interiorSize[key] = v;
+              this.toast(`Interior ${key} = ${v}`);
+            }
+          });
+          isRow.appendChild(inp);
+        }
+        listContainer.appendChild(isRow);
+      }
+
     }
     parent.appendChild(listContainer);
   }
 
+
+  // ─── SHOP SIDE PANEL ──────────────────────────────────────
+
+  private closeShopSidePanel(): void {
+    this.shopSidePanel?.remove();
+    this.shopSidePanel = null;
+  }
+
+  // ─── ZONE EDITOR POPUP ──────────────────────────────────────
+
+  private closeZoneEditor(): void {
+    this.zoneEditorPopup?.remove();
+    this.zoneEditorPopup = null;
+  }
+
+  private openZoneEditor(slot: CitySlot, cityView: import('@/city/CityView').CityView): void {
+    this.closeZoneEditor();
+
+    const popup = document.createElement('div');
+    this.zoneEditorPopup = popup;
+    Object.assign(popup.style, {
+      position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+      width: '320px', maxHeight: '80vh', overflowY: 'auto',
+      background: '#0d1525', border: '1px solid #2d3548', borderRadius: '8px',
+      padding: '12px', zIndex: '10001', fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '11px', color: '#e8e8e8', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    } as CSSStyleDeclaration);
+
+    // Header
+    const header = document.createElement('div');
+    Object.assign(header.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } as CSSStyleDeclaration);
+    const title = document.createElement('span');
+    title.textContent = `Zone Editor — ${slot.slotType}`;
+    title.style.fontWeight = '700';
+    header.appendChild(title);
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'X';
+    Object.assign(closeBtn.style, {
+      background: 'none', border: 'none', color: '#e94560', cursor: 'pointer',
+      fontFamily: 'inherit', fontSize: '13px', fontWeight: '700',
+    } as CSSStyleDeclaration);
+    closeBtn.addEventListener('click', () => this.closeZoneEditor());
+    header.appendChild(closeBtn);
+    popup.appendChild(header);
+
+    // Position editor
+    const posRow = this.zeMakeRow(popup, 'Position (grid)');
+    for (const key of ['x', 'y'] as const) {
+      const inp = this.zeMakeInput(posRow, key, String(slot.position[key]));
+      inp.addEventListener('change', () => {
+        const v = parseInt(inp.value);
+        if (!isNaN(v)) {
+          (slot.position as any)[key] = v;
+          cityView.renderer.markDirty();
+        }
+      });
+    }
+
+    // Truck stop editor
+    const tsRow = this.zeMakeRow(popup, 'Truck stop');
+    const ts = slot.truckStop ?? new Vector2(0, 0);
+    for (const key of ['x', 'y'] as const) {
+      const inp = this.zeMakeInput(tsRow, key, String(ts[key]));
+      inp.addEventListener('change', () => {
+        const v = parseInt(inp.value);
+        if (!isNaN(v)) {
+          if (!slot.truckStop) slot.truckStop = new Vector2(0, 0);
+          (slot.truckStop as any)[key] = v;
+          cityView.renderer.markDirty();
+        }
+      });
+    }
+
+    // Interior size editor
+    if (slot.slotType === 'factory' || slot.slotType === 'storage') {
+      const intRow = this.zeMakeRow(popup, 'Interior size');
+      for (const key of ['w', 'h'] as const) {
+        const inp = this.zeMakeInput(intRow, key, String(slot.interiorSize[key]));
+        inp.addEventListener('change', () => {
+          const v = parseInt(inp.value);
+          if (!isNaN(v) && v > 0) slot.interiorSize[key] = v;
+        });
+      }
+    }
+
+    // Cost editor
+    const costRow = this.zeMakeRow(popup, 'Cost');
+    const costInp = this.zeMakeInput(costRow, '', String(slot.cost));
+    costInp.style.width = '60px';
+    costInp.addEventListener('change', () => {
+      const v = parseInt(costInp.value);
+      if (!isNaN(v) && v >= 0) {
+        slot.cost = v;
+        cityView.renderer.markDirty();
+      }
+    });
+
+    // Separator
+    const sep = document.createElement('hr');
+    Object.assign(sep.style, { border: 'none', borderTop: '1px solid #2d3548', margin: '8px 0' } as CSSStyleDeclaration);
+    popup.appendChild(sep);
+
+    // Zones list
+    const zonesTitle = document.createElement('div');
+    Object.assign(zonesTitle.style, { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' } as CSSStyleDeclaration);
+    const zt = document.createElement('span');
+    zt.textContent = `Zones (${slot.pixelZones.length})`;
+    zt.style.fontWeight = '600';
+    zonesTitle.appendChild(zt);
+    const addZoneBtn = document.createElement('button');
+    addZoneBtn.textContent = '+ Add Zone';
+    Object.assign(addZoneBtn.style, {
+      background: '#1c2541', border: '1px solid #2d3548', borderRadius: '4px',
+      color: '#53d769', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px',
+      padding: '2px 8px',
+    } as CSSStyleDeclaration);
+    addZoneBtn.addEventListener('click', () => {
+      slot.pixelZones.push({ x: 0, y: 0, w: 16, h: 16 });
+      cityView.renderer.markDirty();
+      this.openZoneEditor(slot, cityView); // Re-render popup
+    });
+    zonesTitle.appendChild(addZoneBtn);
+    popup.appendChild(zonesTitle);
+
+    const zoneList = document.createElement('div');
+    zoneList.style.display = 'flex';
+    zoneList.style.flexDirection = 'column';
+    zoneList.style.gap = '4px';
+
+    for (let zi = 0; zi < slot.pixelZones.length; zi++) {
+      const zone = slot.pixelZones[zi];
+      const zRow = document.createElement('div');
+      Object.assign(zRow.style, {
+        display: 'flex', gap: '3px', alignItems: 'center',
+        background: '#1c2541', borderRadius: '4px', padding: '4px 6px',
+      } as CSSStyleDeclaration);
+
+      const label = document.createElement('span');
+      label.textContent = `#${zi + 1}`;
+      label.style.color = '#8892a4';
+      label.style.minWidth = '20px';
+      zRow.appendChild(label);
+
+      for (const key of ['x', 'y', 'w', 'h'] as const) {
+        const inp = this.zeMakeInput(zRow, key, String(zone[key]));
+        inp.addEventListener('change', () => {
+          const v = parseInt(inp.value);
+          if (!isNaN(v)) {
+            zone[key] = v;
+            cityView.renderer.markDirty();
+          }
+        });
+      }
+
+      // Delete zone button
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'X';
+      Object.assign(delBtn.style, {
+        background: 'none', border: 'none', color: '#e94560', cursor: 'pointer',
+        fontFamily: 'inherit', fontSize: '11px', fontWeight: '700', padding: '0 2px',
+      } as CSSStyleDeclaration);
+      delBtn.addEventListener('click', () => {
+        slot.pixelZones.splice(zi, 1);
+        cityView.renderer.markDirty();
+        this.openZoneEditor(slot, cityView); // Re-render popup
+      });
+      zRow.appendChild(delBtn);
+
+      zoneList.appendChild(zRow);
+    }
+
+    popup.appendChild(zoneList);
+
+    if (slot.pixelZones.length === 0) {
+      const hint = document.createElement('div');
+      hint.textContent = 'No zones defined — using cell bounds fallback';
+      Object.assign(hint.style, { color: '#8892a4', fontSize: '9px', padding: '4px 0' } as CSSStyleDeclaration);
+      popup.appendChild(hint);
+    }
+
+    document.body.appendChild(popup);
+  }
+
+  /** Helper: create a labeled row in the zone editor */
+  private zeMakeRow(parent: HTMLElement, label: string): HTMLDivElement {
+    const row = document.createElement('div');
+    Object.assign(row.style, { display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' } as CSSStyleDeclaration);
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    Object.assign(lbl.style, { color: '#8892a4', fontSize: '10px', minWidth: '85px' } as CSSStyleDeclaration);
+    row.appendChild(lbl);
+    parent.appendChild(row);
+    return row;
+  }
+
+  /** Helper: create a small input in the zone editor */
+  private zeMakeInput(parent: HTMLElement, placeholder: string, value: string): HTMLInputElement {
+    const inp = document.createElement('input');
+    inp.value = value;
+    inp.placeholder = placeholder;
+    Object.assign(inp.style, {
+      width: '36px', padding: '2px 3px', border: '1px solid #2d3548', borderRadius: '3px',
+      background: '#0d1525', color: '#e8e8e8', fontFamily: 'inherit', fontSize: '10px',
+      textAlign: 'right', boxSizing: 'border-box',
+    } as CSSStyleDeclaration);
+    parent.appendChild(inp);
+    return inp;
+  }
+
+  private openShopSidePanel(cityId: string, slot: CitySlot): void {
+    this.closeShopSidePanel();
+
+    const cityShops = (this.game as any).cityShops as Map<string, CityShop>;
+    const shopDefs = (this.game as any).shopDefinitions as ShopDefinition[];
+    const resourceRegistry = this.game.resourceRegistry;
+    const allResources = resourceRegistry.getAll();
+
+    const shopKey = `${cityId}_${slot.slotKey}`;
+
+    // Force-create the shop if it doesn't exist yet
+    let shop = cityShops.get(shopKey);
+    if (!shop) {
+      const getOrCreate = (this.game as any).getOrCreateShop.bind(this.game);
+      shop = getOrCreate(cityId, slot) as CityShop;
+    }
+
+    const panel = document.createElement('div');
+    this.shopSidePanel = panel;
+    Object.assign(panel.style, {
+      position: 'fixed', top: '44px', right: '360px', zIndex: '9997',
+      width: '300px', maxHeight: 'calc(100vh - 60px)',
+      fontFamily: 'JetBrains Mono, monospace', fontSize: '11px',
+      color: '#e8e8e8', borderRadius: '8px', overflow: 'hidden',
+      border: '1px solid rgba(245,200,66,0.4)',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+      background: '#16213e',
+    } as CSSStyleDeclaration);
+    document.body.appendChild(panel);
+
+    const rebuild = () => {
+      panel.innerHTML = '';
+      if (!shop) return;
+
+      // Header
+      const header = document.createElement('div');
+      Object.assign(header.style, {
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '8px 10px', background: '#0d1525', borderBottom: '1px solid #2d3548',
+        borderRadius: '8px 8px 0 0',
+      } as CSSStyleDeclaration);
+      const title = document.createElement('span');
+      title.textContent = `Shop @ ${slot.slotKey}`;
+      title.style.fontWeight = '700';
+      title.style.fontSize = '11px';
+      title.style.color = '#f5c842';
+      header.appendChild(title);
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'X';
+      Object.assign(closeBtn.style, {
+        background: 'transparent', border: 'none', color: '#8892a4',
+        cursor: 'pointer', fontSize: '12px', fontFamily: 'inherit',
+      } as CSSStyleDeclaration);
+      closeBtn.addEventListener('click', () => this.closeShopSidePanel());
+      header.appendChild(closeBtn);
+      panel.appendChild(header);
+
+      const body = document.createElement('div');
+      Object.assign(body.style, {
+        padding: '10px', overflowY: 'auto', maxHeight: 'calc(100vh - 110px)',
+      } as CSSStyleDeclaration);
+      panel.appendChild(body);
+
+      // ── Name ──
+      const nameRow = this.sidePanelRow(body, 'Name');
+      const nameInput = this.sidePanelInput(nameRow, shop.definition.name, '100%');
+      nameInput.addEventListener('change', () => {
+        (shop!.definition as any).name = nameInput.value;
+        this.toast(`Name: ${nameInput.value}`);
+      });
+
+      // ── Type preset ──
+      const typeRow = this.sidePanelRow(body, 'Preset');
+      const typeSelect = document.createElement('select');
+      Object.assign(typeSelect.style, this.sidePanelInputStyle());
+      typeSelect.style.width = '100%';
+      const customOpt = document.createElement('option');
+      customOpt.value = '';
+      customOpt.textContent = '(custom)';
+      typeSelect.appendChild(customOpt);
+      for (const def of shopDefs) {
+        const opt = document.createElement('option');
+        opt.value = def.id;
+        opt.textContent = def.name;
+        if (def.id === shop.definition.id) opt.selected = true;
+        typeSelect.appendChild(opt);
+      }
+      typeSelect.addEventListener('change', () => {
+        if (!typeSelect.value) return;
+        const newDef = shopDefs.find(d => d.id === typeSelect.value);
+        if (newDef && shop) {
+          (shop as any).definition = { ...newDef };
+          shop.itemPriceModifiers.clear();
+          if (newDef.itemPriceModifiers) {
+            for (const [resId, mod] of Object.entries(newDef.itemPriceModifiers)) {
+              shop.itemPriceModifiers.set(resId, mod);
+            }
+          }
+          this.toast(`Loaded preset: ${newDef.name}`);
+          rebuild();
+        }
+      });
+      typeRow.appendChild(typeSelect);
+
+      // ── Global modifier ──
+      const globalRow = this.sidePanelRow(body, 'Global multiplier');
+      const globalInput = this.sidePanelInput(globalRow, shop.definition.priceModifier.toFixed(2), '60px');
+      globalInput.style.color = '#f5c842';
+      globalInput.addEventListener('change', () => {
+        const v = parseFloat(globalInput.value);
+        if (!isNaN(v) && v > 0 && shop) {
+          (shop.definition as any).priceModifier = v;
+          this.toast(`Global mult: x${v.toFixed(2)}`);
+          rebuild();
+        }
+      });
+
+      // Revenue display
+      const revSpan = document.createElement('span');
+      revSpan.style.color = '#53d769';
+      revSpan.style.fontSize = '10px';
+      revSpan.style.marginLeft = '8px';
+      revSpan.textContent = `Rev: ${shop.totalRevenue}`;
+      globalRow.appendChild(revSpan);
+
+      // ── Description ──
+      const descRow = this.sidePanelRow(body, 'Description');
+      const descInput = this.sidePanelInput(descRow, shop.definition.description, '100%');
+      descInput.addEventListener('change', () => {
+        if (shop) (shop.definition as any).description = descInput.value;
+      });
+
+      // ── Categories ──
+      const catRow = this.sidePanelRow(body, 'Categories (comma sep)');
+      const catInput = this.sidePanelInput(catRow, shop.definition.acceptedCategories.join(', '), '100%');
+      catInput.placeholder = 'empty = all';
+      catInput.addEventListener('change', () => {
+        if (!shop) return;
+        const cats = catInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        (shop.definition as any).acceptedCategories = cats;
+        this.toast(`Categories: ${cats.length === 0 ? 'all' : cats.join(', ')}`);
+      });
+
+      // ── Accepted items ──
+      const itemsRow = this.sidePanelRow(body, 'Accepted items (comma sep)');
+      const itemsInput = this.sidePanelInput(itemsRow, (shop.definition.acceptedItems ?? []).join(', '), '100%');
+      itemsInput.placeholder = 'empty = use categories';
+      itemsInput.addEventListener('change', () => {
+        if (!shop) return;
+        const items = itemsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        (shop.definition as any).acceptedItems = items.length > 0 ? items : undefined;
+      });
+
+      // ── Separator ──
+      const sep = document.createElement('hr');
+      Object.assign(sep.style, { border: 'none', borderTop: '1px solid #2d3548', margin: '10px 0' } as CSSStyleDeclaration);
+      body.appendChild(sep);
+
+      // ── Per-item modifiers ──
+      const perItemTitle = document.createElement('div');
+      perItemTitle.textContent = 'PER-ITEM PRICE MODIFIERS';
+      Object.assign(perItemTitle.style, {
+        fontSize: '10px', color: '#a855f7', fontWeight: '700', marginBottom: '6px',
+        letterSpacing: '0.5px',
+      } as CSSStyleDeclaration);
+      body.appendChild(perItemTitle);
+
+      for (const [resId, mod] of shop.itemPriceModifiers) {
+        const resDef = resourceRegistry.get(resId);
+        const row = document.createElement('div');
+        Object.assign(row.style, {
+          display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '3px',
+        } as CSSStyleDeclaration);
+
+        // Color dot
+        const resColor = resDef ? '#' + resDef.color.toString(16).padStart(6, '0') : '#888';
+        const dot = document.createElement('span');
+        Object.assign(dot.style, {
+          width: '8px', height: '8px', borderRadius: '50%', background: resColor,
+          display: 'inline-block', flexShrink: '0',
+        } as CSSStyleDeclaration);
+        row.appendChild(dot);
+
+        // Name
+        const name = document.createElement('span');
+        name.textContent = resDef?.name ?? resId;
+        name.style.fontSize = '10px';
+        name.style.flex = '1';
+        row.appendChild(name);
+
+        // Modifier input
+        const modInp = this.sidePanelInput(row, mod.toFixed(2), '45px');
+        modInp.style.color = '#f5c842';
+        modInp.addEventListener('change', () => {
+          const v = parseFloat(modInp.value);
+          if (!isNaN(v) && v > 0 && shop) {
+            shop.setItemPriceModifier(resId, v);
+            rebuild();
+          }
+        });
+
+        // Effective price
+        const eff = document.createElement('span');
+        eff.style.color = '#53d769';
+        eff.style.fontSize = '9px';
+        eff.style.width = '35px';
+        eff.style.textAlign = 'right';
+        eff.textContent = `= ${shop.getSellPrice(resId)}`;
+        row.appendChild(eff);
+
+        // Remove
+        const rm = document.createElement('button');
+        rm.textContent = 'x';
+        Object.assign(rm.style, {
+          padding: '0 4px', border: '1px solid #e94560', borderRadius: '3px',
+          background: 'transparent', color: '#e94560', cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: '9px', lineHeight: '14px',
+        } as CSSStyleDeclaration);
+        rm.addEventListener('click', () => {
+          shop?.removeItemPriceModifier(resId);
+          rebuild();
+        });
+        row.appendChild(rm);
+
+        body.appendChild(row);
+      }
+
+      // ── Add new modifier ──
+      const addRow = document.createElement('div');
+      Object.assign(addRow.style, {
+        display: 'flex', gap: '4px', alignItems: 'center', marginTop: '6px',
+      } as CSSStyleDeclaration);
+
+      const addSel = document.createElement('select');
+      Object.assign(addSel.style, this.sidePanelInputStyle());
+      addSel.style.flex = '1';
+      const defOption = document.createElement('option');
+      defOption.value = '';
+      defOption.textContent = 'Add item...';
+      addSel.appendChild(defOption);
+      for (const res of allResources) {
+        if (shop.itemPriceModifiers.has(res.id)) continue;
+        if (res.id === 'dust') continue;
+        const opt = document.createElement('option');
+        opt.value = res.id;
+        opt.textContent = `${res.name} (${res.sellPrice})`;
+        addSel.appendChild(opt);
+      }
+      addRow.appendChild(addSel);
+
+      const addModInp = this.sidePanelInput(addRow, '1.5', '40px');
+      addModInp.style.color = '#f5c842';
+
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+';
+      Object.assign(addBtn.style, {
+        padding: '2px 8px', border: '1px solid #53d769', borderRadius: '3px',
+        background: 'transparent', color: '#53d769', cursor: 'pointer',
+        fontFamily: 'inherit', fontSize: '11px', fontWeight: '700',
+      } as CSSStyleDeclaration);
+      addBtn.addEventListener('click', () => {
+        const resId = addSel.value;
+        const mod = parseFloat(addModInp.value);
+        if (!resId || isNaN(mod) || mod <= 0 || !shop) return;
+        shop.setItemPriceModifier(resId, mod);
+        rebuild();
+      });
+      addRow.appendChild(addBtn);
+      body.appendChild(addRow);
+    };
+
+    rebuild();
+  }
+
+  private sidePanelRow(parent: HTMLElement, label: string): HTMLDivElement {
+    const row = document.createElement('div');
+    Object.assign(row.style, {
+      display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap',
+    } as CSSStyleDeclaration);
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    Object.assign(lbl.style, { color: '#8892a4', fontSize: '10px', width: '100%' } as CSSStyleDeclaration);
+    row.appendChild(lbl);
+    parent.appendChild(row);
+    return row;
+  }
+
+  private sidePanelInput(parent: HTMLElement, value: string, width: string): HTMLInputElement {
+    const inp = document.createElement('input');
+    inp.value = value;
+    Object.assign(inp.style, this.sidePanelInputStyle());
+    inp.style.width = width;
+    parent.appendChild(inp);
+    return inp;
+  }
+
+  private sidePanelInputStyle(): Record<string, string> {
+    return {
+      padding: '3px 5px', border: '1px solid #2d3548', borderRadius: '3px',
+      background: '#0d1525', color: '#e8e8e8', fontFamily: 'inherit', fontSize: '10px',
+      boxSizing: 'border-box',
+    };
+  }
 
   // ─── FACTORY TAB ───────────────────────────────────────────
 
@@ -1430,13 +1955,141 @@ export class DebugPanel {
     this.makeButton('Clear All Entities', () => {
       if (factory.clear) {
         factory.clear();
-        factoryView.rebuildAll?.();
+        (factoryView as any).renderer?.markGridDirty();
         this.toast('Factory cleared');
         this.refreshTab();
       } else {
         this.toast('clear() not available on Factory');
       }
     }, actionSec, true);
+
+    // ── Border Paint Mode ──
+    const slot = this.game.getActiveFactorySlot?.();
+    if (slot) {
+      const borderSec = this.makeSection('Border Editor');
+      const hint = document.createElement('div');
+      hint.style.color = '#8892a4';
+      hint.style.fontSize = '9px';
+      hint.style.marginBottom = '6px';
+      hint.textContent = 'Select a brush then right-click border cells in the factory view.';
+      borderSec.appendChild(hint);
+
+      // Status label
+      const statusLabel = document.createElement('div');
+      statusLabel.style.color = '#8892a4';
+      statusLabel.style.fontSize = '10px';
+      statusLabel.style.marginBottom = '4px';
+      const borderCount = slot.manualBorder.filter(b => b.type === 'road').length;
+      statusLabel.textContent = `Manual border: ${slot.manualBorder.length} cells (${borderCount} roads)`;
+      borderSec.appendChild(statusLabel);
+
+      const btnRow = document.createElement('div');
+      Object.assign(btnRow.style, { display: 'flex', gap: '4px', flexWrap: 'wrap' } as CSSStyleDeclaration);
+
+      const paintRoadBtn = this.makeSmallBtn('Paint Road', '#2d8a4e', () => {
+        this.startBorderPaint('road', slot, factory, factoryView, paintRoadBtn, paintWallBtn);
+      });
+      const paintWallBtn = this.makeSmallBtn('Paint Wall', '#6b7280', () => {
+        this.startBorderPaint('wall', slot, factory, factoryView, paintRoadBtn, paintWallBtn);
+      });
+      btnRow.appendChild(paintRoadBtn);
+      btnRow.appendChild(paintWallBtn);
+
+      btnRow.appendChild(this.makeSmallBtn('Stop', '#e94560', () => {
+        this.stopBorderPaint(factoryView);
+        paintRoadBtn.style.outline = '';
+        paintWallBtn.style.outline = '';
+        this.toast('Border paint stopped');
+      }));
+
+      btnRow.appendChild(this.makeSmallBtn('Apply', '#4dc9f6', () => {
+        import('@/core/BorderContextComputer').then(mod => {
+          const cityView = this.game.getCurrentCityView?.();
+          factory.borderContext = mod.computeBorderContext(slot, cityView?.layout);
+          (factoryView as any).renderer?.markGridDirty();
+          this.toast(`Border applied (${slot.manualBorder.length} cells)`);
+          this.refreshTab();
+        });
+      }));
+
+      btnRow.appendChild(this.makeSmallBtn('Clear', '#f5c842', () => {
+        slot.manualBorder = [];
+        this.stopBorderPaint(factoryView);
+        import('@/core/BorderContextComputer').then(mod => {
+          const cityView = this.game.getCurrentCityView?.();
+          factory.borderContext = mod.computeBorderContext(slot, cityView?.layout);
+          (factoryView as any).renderer?.markGridDirty();
+          this.toast('Manual border cleared');
+          this.refreshTab();
+        });
+      }));
+
+      borderSec.appendChild(btnRow);
+    }
+  }
+
+  private borderPaintType: 'road' | 'wall' | null = null;
+
+  private startBorderPaint(
+    type: 'road' | 'wall',
+    slot: CitySlot,
+    factory: any,
+    factoryView: any,
+    roadBtn: HTMLElement,
+    wallBtn: HTMLElement,
+  ): void {
+    this.borderPaintType = type;
+    roadBtn.style.outline = type === 'road' ? '2px solid #53d769' : '';
+    wallBtn.style.outline = type === 'wall' ? '2px solid #e8e8e8' : '';
+    this.showBanner(`Border paint: ${type} (right-click cells)`);
+
+    // Build border lookup
+    const borderMap = new Map<string, 'wall' | 'road'>();
+    for (const b of slot.manualBorder) {
+      borderMap.set(`${b.x},${b.y}`, b.type);
+    }
+
+    // Grid dimensions = interiorSize * FACTORY_CELL_RATIO (each city cell = 5 factory cells)
+    const R = 5; // FACTORY_CELL_RATIO
+    const gw = slot.interiorSize.w * R;
+    const gh = slot.interiorSize.h * R;
+
+    factoryView.onRightClickCell = (gx: number, gy: number): boolean => {
+      if (!this.borderPaintType) return false;
+
+      // Check if this is a border cell (outside interior grid)
+      const isInterior = gx >= 0 && gx < gw && gy >= 0 && gy < gh;
+      if (isInterior) return false; // Can't paint interior cells
+
+      // Check if it's within the border ring (1 cell around interior)
+      const isBorder = gx >= -1 && gx <= gw && gy >= -1 && gy <= gh;
+      if (!isBorder) return false;
+
+      const key = `${gx},${gy}`;
+      borderMap.set(key, this.borderPaintType);
+
+      // Sync back to slot
+      slot.manualBorder = [];
+      for (const [k, t] of borderMap) {
+        const [x, y] = k.split(',').map(Number);
+        slot.manualBorder.push({ x, y, type: t });
+      }
+
+      // Live update: recompute border and re-render
+      import('@/core/BorderContextComputer').then(mod => {
+        const cityView = this.game.getCurrentCityView?.();
+        factory.borderContext = mod.computeBorderContext(slot, cityView?.layout);
+        (factoryView as any).renderer?.markGridDirty();
+      });
+
+      return true;
+    };
+  }
+
+  private stopBorderPaint(factoryView: any): void {
+    this.borderPaintType = null;
+    factoryView.onRightClickCell = null;
+    this.hideBanner();
   }
 
   destroy(): void {

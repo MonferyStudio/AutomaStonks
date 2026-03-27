@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import type { RecipeBook } from '@/simulation/RecipeBook';
 import type { RecipeRegistry } from '@/simulation/RecipeRegistry';
 import type { ResourceRegistry } from '@/simulation/Resource';
@@ -7,7 +7,7 @@ import type { RecipeDefinition } from '@/simulation/Recipe';
 import { eventBus } from '@/core/EventBus';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -15,13 +15,13 @@ const TITLE_STYLE = new TextStyle({
 });
 
 const RECIPE_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fill: COLORS.TEXT_PRIMARY,
 });
 
 const DIM_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 10,
   fill: COLORS.TEXT_DIM,
 });
@@ -83,7 +83,7 @@ export class RecipeBookUI {
   }
 
   private rebuild(): void {
-    this.contentContainer.removeChildren();
+    this.contentContainer.removeChildren().forEach(c => c.destroy({ children: true }));
 
     const discovered = this.recipeBook.getDiscoveredRecipes();
     const allRecipes = this.recipeRegistry.getAll();
@@ -146,7 +146,7 @@ export class RecipeBookUI {
 
       const machineLabel = new Text({
         text: recipe.machineType.toUpperCase(),
-        style: new TextStyle({ fontFamily: 'Space Mono, monospace', fontSize: 8, fill: COLORS.ACCENT_VIOLET }),
+        style: new TextStyle({ fontFamily: FONT_MONO, fontSize: 8, fill: COLORS.ACCENT_VIOLET }),
       });
       machineLabel.anchor.set(1, 0);
       machineLabel.position.set(PANEL_WIDTH - PANEL_PADDING * 2 - 8, 6);

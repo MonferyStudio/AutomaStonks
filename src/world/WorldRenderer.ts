@@ -1,8 +1,8 @@
 import { Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import { formatNumber } from '@/utils/formatNumber';
 import type { WorldMap, WorldCity } from './WorldMap';
-import type { BiomeMap, BiomeType } from './BiomeMap';
+import { TextureCache } from '@/rendering/TextureCache';
 
 const TEXT_RESOLUTION = 4;
 const CITY_SIZE = 32; // half-size of the city outer frame
@@ -10,20 +10,6 @@ const CITY_INNER_PAD = 6; // padding between frame and inner colored block
 const CITY_CORNER = 8; // corner radius of city frame
 const SHADOW_DX = 3;
 const SHADOW_DY = 5;
-
-/** Multiple color options per biome zone — picked via city name hash */
-const BIOME_CITY_COLORS: Record<string, number[]> = {
-  // Water-adjacent / coastal — blues & teals
-  coastal: [0x4a90c4, 0x3a7cb8, 0x5a9ed0, 0x2e88a8],
-  // Beach / shore — sandy & warm
-  beach:   [0xd4a85c, 0xc49450, 0xe0b468, 0xb8924e],
-  // Low land — greens & warm yellowy-greens
-  low:     [0x8bc34a, 0xa4c639, 0xc6b84a, 0xd4a843],
-  // Mid land — deeper greens & olive & rust
-  mid:     [0x4a8c3c, 0x6b8e50, 0x8b6e4a, 0xb05540],
-  // High land — greys, browns, snowy whites
-  high:    [0x8c7a6c, 0x9a8878, 0xa69484, 0xc8c0b8],
-};
 
 export class WorldRenderer {
   readonly container: Container;
@@ -35,7 +21,6 @@ export class WorldRenderer {
 
   private dirty = true;
   private terrainDrawn = false;
-  private biomeMap: BiomeMap | null = null;
 
   constructor() {
     this.container = new Container();
@@ -53,51 +38,34 @@ export class WorldRenderer {
     this.container.addChild(this.terrainLayer, this.connectionLayer, this.cityLayer, this.labelLayer);
   }
 
-  setBiomeMap(biomeMap: BiomeMap): void {
-    this.biomeMap = biomeMap;
-    this.terrainDrawn = false;
-    this.dirty = true;
-  }
-
   markDirty(): void {
     this.dirty = true;
   }
 
   render(worldMap: WorldMap): void {
-    if (!this.terrainDrawn && this.biomeMap) {
-      this.renderTerrain(this.biomeMap);
-      this.terrainDrawn = true;
+    if (!this.terrainDrawn) {
+      this.renderTerrain();
     }
 
     if (!this.dirty) return;
     this.dirty = false;
 
-    this.connectionLayer.removeChildren();
-    this.cityLayer.removeChildren();
-    this.labelLayer.removeChildren();
+    this.connectionLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.cityLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.labelLayer.removeChildren().forEach(c => c.destroy({ children: true }));
 
     this.renderConnections(worldMap);
     this.renderCities(worldMap);
   }
 
-  private renderTerrain(biomeMap: BiomeMap): void {
-    this.terrainLayer.removeChildren();
-
-    // 1:1 rendering for precise Perlin contours, then a light blur
-    // to soften the few biome boundaries into vector-smooth transitions.
-    const raw = biomeMap.renderToCanvas(1);
-
-    const smooth = document.createElement('canvas');
-    smooth.width = raw.width;
-    smooth.height = raw.height;
-    const ctx = smooth.getContext('2d')!;
-    ctx.filter = 'blur(2px)';
-    ctx.drawImage(raw, 0, 0);
-
-    const texture = Texture.from(smooth);
-    const sprite = new Sprite(texture);
-
+  private renderTerrain(): void {
+    this.terrainLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    const tex = TextureCache.worldMapTex;
+    if (!tex) return;
+    const sprite = new Sprite(tex);
+    sprite.scale.set(8); // 500×350 pixel art → 4000×2800 world
     this.terrainLayer.addChild(sprite);
+    this.terrainDrawn = true;
   }
 
   private renderConnections(worldMap: WorldMap): void {
@@ -175,7 +143,7 @@ export class WorldRenderer {
       const distLabel = new Text({
         text: String(conn.distance),
         style: new TextStyle({
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: FONT_UI,
           fontSize: bothUnlocked ? 10 : 8,
           fontWeight: '700',
           fill: bothUnlocked ? 0xffffff : 0x777777,
@@ -244,7 +212,7 @@ export class WorldRenderer {
   }
 
   private renderUnlockedCity(city: WorldCity, x: number, y: number): void {
-    const color = this.getCityColor(city);
+    const color = city.cityType.color;
     const s = CITY_SIZE;
     const pad = CITY_INNER_PAD;
     const r = CITY_CORNER;
@@ -271,7 +239,7 @@ export class WorldRenderer {
     const initialsLabel = new Text({
       text: initials,
       style: new TextStyle({
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: FONT_UI,
         fontSize: 16,
         fontWeight: '800',
         fill: 0xffffff,
@@ -287,7 +255,7 @@ export class WorldRenderer {
     const nameLabel = new Text({
       text: city.name,
       style: new TextStyle({
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: FONT_UI,
         fontSize: 14,
         fontWeight: '800',
         fill: 0x3a3a4a,
@@ -335,7 +303,7 @@ export class WorldRenderer {
     const costLabel = new Text({
       text: formatNumber(city.unlockCost),
       style: new TextStyle({
-        fontFamily: 'Space Mono, monospace',
+        fontFamily: FONT_MONO,
         fontSize: 10,
         fontWeight: '700',
         fill: COLORS.ACCENT_YELLOW,
@@ -345,18 +313,6 @@ export class WorldRenderer {
     costLabel.anchor.set(0.5, 0);
     costLabel.position.set(x, y + s + 6);
     layer.addChild(costLabel);
-  }
-
-  /** Pick a city block color based on the actual biome at its position */
-  private getCityColor(city: WorldCity): number {
-    if (!this.biomeMap) return city.cityType.color;
-
-    const { x, y } = city.position;
-    const biome = this.biomeMap.getAt(x, y);
-    const zone = biomeToZone(biome.type, this.biomeMap.isCoastal(x, y));
-    const palette = BIOME_CITY_COLORS[zone];
-    const hash = hashString(city.id);
-    return palette[hash % palette.length];
   }
 
   getCityAtPosition(worldX: number, worldY: number, worldMap: WorldMap): WorldCity | null {
@@ -382,35 +338,6 @@ function getInitials(name: string): string {
     return name.slice(0, 2).toUpperCase();
   }
   return words.map((w) => w[0]).join('').toUpperCase().slice(0, 2);
-}
-
-function biomeToZone(type: BiomeType, isCoastal: boolean): string {
-  if (isCoastal) return 'coastal';
-  switch (type) {
-    case 'deep_ocean':
-    case 'ocean':
-      return 'coastal';
-    case 'beach':
-      return 'beach';
-    case 'plains':
-    case 'desert':
-      return 'low';
-    case 'forest':
-    case 'dense_forest':
-    case 'hills':
-      return 'mid';
-    case 'mountains':
-    case 'snow':
-      return 'high';
-  }
-}
-
-function hashString(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
 }
 
 /** Returns the intersection point of two line segments, or null if they don't cross.
@@ -443,4 +370,3 @@ function segmentIntersection(
 
   return { x: ax1 + t * dx1, y: ay1 + t * dy1 };
 }
-

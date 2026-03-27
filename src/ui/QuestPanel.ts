@@ -1,11 +1,11 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, FONT_UI, FONT_MONO } from '@/utils/Constants';
 import { formatNumber } from '@/utils/formatNumber';
 import type { QuestManager } from '@/economy/QuestManager';
 import { eventBus } from '@/core/EventBus';
 
 const TITLE_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fontWeight: '700',
   fill: COLORS.TEXT_PRIMARY,
@@ -13,19 +13,19 @@ const TITLE_STYLE = new TextStyle({
 });
 
 const QUEST_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 11,
   fill: COLORS.TEXT_PRIMARY,
 });
 
 const DESC_STYLE = new TextStyle({
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: FONT_UI,
   fontSize: 9,
   fill: COLORS.TEXT_DIM,
 });
 
 const REWARD_STYLE = new TextStyle({
-  fontFamily: 'Space Mono, monospace',
+  fontFamily: FONT_MONO,
   fontSize: 10,
   fontWeight: '600',
   fill: COLORS.ACCENT_VIOLET,
@@ -82,7 +82,7 @@ export class QuestPanel {
   }
 
   private rebuild(): void {
-    this.contentContainer.removeChildren();
+    this.contentContainer.removeChildren().forEach(c => c.destroy({ children: true }));
 
     const quests = this.questManager.getQuests();
     let yOffset = 0;
@@ -127,7 +127,7 @@ export class QuestPanel {
 
       const rewardText = new Text({
         text: `+${formatNumber(def.reward.talent)}`,
-        style: new TextStyle({ fontFamily: 'Space Mono, monospace', fontSize: 9, fill: COLORS.ACCENT_VIOLET }),
+        style: new TextStyle({ fontFamily: FONT_MONO, fontSize: 9, fill: COLORS.ACCENT_VIOLET }),
       });
       rewardText.anchor.set(1, 0);
       rewardText.position.set(PANEL_WIDTH - PANEL_PADDING * 2 - 8, 22);

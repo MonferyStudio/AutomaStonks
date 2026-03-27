@@ -47,64 +47,63 @@ export class RoadNetwork {
   findPath(from: Vector2, to: Vector2): Vector2[] | null {
     if (!this.isRoad(from) || !this.isRoad(to)) return null;
 
-    const openSet = new Map<string, { pos: Vector2; g: number; f: number; parent: string | null }>();
-    const closedSet = new Set<string>();
     const fromKey = from.toKey();
     const toKey = to.toKey();
+    if (fromKey === toKey) return [from];
 
-    openSet.set(fromKey, { pos: from, g: 0, f: from.manhattanDistance(to), parent: null });
+    // node map: key → { pos, g, f, parent key }
+    const allNodes = new Map<string, { pos: Vector2; g: number; f: number; parent: string | null }>();
+    const openKeys = new Set<string>();
+    const closedKeys = new Set<string>();
 
-    while (openSet.size > 0) {
+    allNodes.set(fromKey, { pos: from, g: 0, f: from.manhattanDistance(to), parent: null });
+    openKeys.add(fromKey);
+
+    while (openKeys.size > 0) {
+      // Pick open node with lowest f
       let bestKey = '';
       let bestF = Infinity;
-      for (const [key, node] of openSet) {
-        if (node.f < bestF) {
-          bestF = node.f;
-          bestKey = key;
-        }
+      for (const key of openKeys) {
+        const n = allNodes.get(key)!;
+        if (n.f < bestF) { bestF = n.f; bestKey = key; }
       }
-
-      const current = openSet.get(bestKey)!;
-      openSet.delete(bestKey);
 
       if (bestKey === toKey) {
-        return this.reconstructPath(current, closedSet, from);
+        // Reconstruct path
+        const path: Vector2[] = [];
+        let cur: string | null = bestKey;
+        while (cur !== null) {
+          path.push(allNodes.get(cur)!.pos);
+          cur = allNodes.get(cur)!.parent;
+        }
+        path.reverse();
+        return path;
       }
 
-      closedSet.add(bestKey);
+      openKeys.delete(bestKey);
+      closedKeys.add(bestKey);
+      const current = allNodes.get(bestKey)!;
 
       for (const neighbor of this.getRoadNeighbors(current.pos)) {
         const nKey = neighbor.toKey();
-        if (closedSet.has(nKey)) continue;
+        if (closedKeys.has(nKey)) continue;
 
         const g = current.g + 1;
-        const existing = openSet.get(nKey);
+        const existing = allNodes.get(nKey);
 
         if (!existing || g < existing.g) {
-          openSet.set(nKey, {
+          allNodes.set(nKey, {
             pos: neighbor,
             g,
             f: g + neighbor.manhattanDistance(to),
             parent: bestKey,
           });
+          openKeys.add(nKey);
         }
       }
     }
 
     return null;
-  }
-
-  private reconstructPath(
-    endNode: { pos: Vector2; parent: string | null },
-    closedSet: Set<string>,
-    start: Vector2,
-  ): Vector2[] {
-    const path: Vector2[] = [endNode.pos];
-    let currentParent = endNode.parent;
-
-    // Simplified reconstruction - walk back through parents
-    // In a real implementation, we'd store parents in the closed set
-    return path;
   }
 
   getPathDistance(from: Vector2, to: Vector2): number {

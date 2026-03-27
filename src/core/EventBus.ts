@@ -1,6 +1,7 @@
 export interface GameEvents {
   ItemProduced: { factoryId: string; recipeId: string; itemId: string; quantity: number };
   ItemSold: { shopId: string; itemId: string; revenue: number };
+  ItemBought: { storageId: string; itemId: string; cost: number };
   RecipeDiscovered: { recipeId: string };
   LayoutChanged: { factoryId: string; layoutVersion: number };
   TickCompleted: { tickNumber: number };
@@ -12,6 +13,10 @@ export interface GameEvents {
   EntityPlaced: { entityId: string; x: number; y: number };
   EntityRemoved: { entityId: string; x: number; y: number };
   StorageUpdated: { storageId: string };
+  PricesUpdated: {};
+  CurrencyChanged: { symbol: string };
+  XPGained: { amount: number; newTotal: number; source: string };
+  LevelChanged: { oldLevel: number; newLevel: number };
 }
 
 export type ViewType = 'world' | 'city' | 'factory';

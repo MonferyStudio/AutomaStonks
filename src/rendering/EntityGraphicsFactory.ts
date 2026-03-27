@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { TextureCache } from './TextureCache';
 import type { Belt } from '@/simulation/Belt';
-import type { Splitter } from '@/simulation/Splitter';
+import type { Exchanger } from '@/simulation/Exchanger';
 import { Direction, directionToVector, oppositeDirection, rotateDirectionCW } from '@/utils/Direction';
 import { CELL_SIZE_PX, COLORS } from '@/utils/Constants';
 
@@ -73,7 +73,7 @@ export function createSeamlessBeltGraphic(belt: Belt): BeltSpriteResult {
     sprite.anchor.set(0.5);
     sprite.position.set(S / 2, S / 2);
     sprite.roundPixels = true;
-    sprite.scale.set(2);
+    sprite.scale.set(4);
 
     if (isStraight) {
       const rotMap: Record<Direction, number> = {
@@ -122,15 +122,15 @@ export function createSeamlessBeltGraphic(belt: Belt): BeltSpriteResult {
   return { container, sprite: null, type };
 }
 
-export function createSplitterGraphic(splitter: Splitter): Container {
+export function createExchangerGraphic(exchanger: Exchanger): Container {
   const container = new Container();
   const S = CELL_SIZE_PX;
   const g = new Graphics();
   const color = 0xf7c948;
   const bgColor = 0x2a2a1e;
 
-  const cells = splitter.getCells();
-  const dir = splitter.direction;
+  const cells = exchanger.getCells();
+  const dir = exchanger.direction;
   const dirVec = directionToVector(dir);
   const perpVec = directionToVector(rotateDirectionCW(dir));
 

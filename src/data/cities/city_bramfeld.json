@@ -1,47 +1,36 @@
 {
-  "width": 14,
-  "height": 11,
-  "bgColor": "0x162232",
+  "width": 15,
+  "height": 15,
+  "bgColor": "0x6daa2c",
+  "mapImage": "Bramfeld.png",
   "roads": [
     [
-      4,
-      3
+      11,
+      4
     ],
     [
-      5,
-      3
+      10,
+      4
     ],
     [
-      6,
-      3
-    ],
-    [
-      7,
-      3
+      9,
+      4
     ],
     [
       8,
-      3
-    ],
-    [
-      4,
-      6
-    ],
-    [
-      5,
-      6
-    ],
-    [
-      6,
-      6
+      4
     ],
     [
       7,
-      6
+      4
     ],
     [
-      8,
-      6
+      6,
+      4
+    ],
+    [
+      5,
+      4
     ],
     [
       4,
@@ -52,12 +41,8 @@
       5
     ],
     [
-      8,
-      4
-    ],
-    [
-      8,
-      5
+      4,
+      6
     ],
     [
       4,
@@ -72,462 +57,421 @@
       9
     ],
     [
+      4,
+      10
+    ],
+    [
+      4,
+      11
+    ],
+    [
+      5,
+      11
+    ],
+    [
+      6,
+      11
+    ],
+    [
+      8,
+      11
+    ],
+    [
+      7,
+      11
+    ],
+    [
       9,
-      3
-    ],
-    [
-      10,
-      3
-    ],
-    [
-      11,
-      3
+      11
     ],
     [
       9,
-      6
-    ],
-    [
-      10,
-      6
-    ],
-    [
-      11,
-      6
+      10
     ],
     [
       9,
-      7
+      9
     ],
     [
       9,
       8
     ],
     [
+      9,
+      7
+    ],
+    [
+      10,
+      7
+    ],
+    [
+      11,
+      7
+    ],
+    [
+      8,
+      7
+    ],
+    [
+      7,
+      7
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      5,
+      7
+    ],
+    [
+      8,
+      6
+    ],
+    [
+      8,
+      5
+    ],
+    [
+      10,
+      11
+    ],
+    [
       3,
-      4
+      7
+    ],
+    [
+      2,
+      7
+    ],
+    [
+      0,
+      7
+    ],
+    [
+      1,
+      7
+    ],
+    [
+      12,
+      7
+    ],
+    [
+      14,
+      7
+    ],
+    [
+      13,
+      7
     ]
   ],
   "factorySlots": [
     {
       "position": [
+        0,
+        0
+      ],
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 100,
+      "pixelZones": [
+        [
+          164,
+          132,
+          36,
+          64
+        ]
+      ],
+      "interiorSize": [
         2,
-        7
+        2
       ],
-      "polyominoId": "custom_6",
-      "cells": [
-        [
-          1,
-          0
-        ],
-        [
-          1,
-          1
-        ],
-        [
-          0,
-          0
-        ],
-        [
-          0,
-          1
-        ],
-        [
-          1,
-          2
-        ],
-        [
-          0,
-          2
-        ]
-      ],
-      "cost": 10000
-    },
-    {
-      "position": [
+      "truckStop": [
         10,
-        5
+        11
       ],
-      "polyominoId": "custom_2",
-      "cells": [
+      "manualBorder": [
         [
           0,
-          0
+          10,
+          "road"
         ],
         [
           1,
-          0
+          10,
+          "road"
+        ],
+        [
+          2,
+          10,
+          "road"
+        ],
+        [
+          3,
+          10,
+          "road"
+        ],
+        [
+          4,
+          10,
+          "road"
         ]
-      ],
-      "cost": 100
+      ]
     },
     {
       "position": [
-        7,
-        7
+        0,
+        0
       ],
-      "polyominoId": "custom_4",
-      "cells": [
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 50000,
+      "pixelZones": [
         [
-          0,
-          0
-        ],
-        [
-          1,
-          0
-        ],
-        [
-          1,
-          1
-        ],
-        [
-          0,
-          1
+          28,
+          128,
+          32,
+          68
         ]
       ],
-      "cost": 1000
+      "interiorSize": [
+        2,
+        4
+      ],
+      "truckStop": [
+        4,
+        10
+      ],
+      "manualBorder": [
+        [
+          6,
+          -1,
+          "wall"
+        ],
+        [
+          0,
+          20,
+          "road"
+        ],
+        [
+          3,
+          20,
+          "road"
+        ],
+        [
+          1,
+          20,
+          "road"
+        ],
+        [
+          2,
+          20,
+          "road"
+        ],
+        [
+          4,
+          20,
+          "road"
+        ],
+        [
+          7,
+          20,
+          "road"
+        ],
+        [
+          5,
+          20,
+          "road"
+        ],
+        [
+          6,
+          20,
+          "road"
+        ],
+        [
+          8,
+          20,
+          "road"
+        ],
+        [
+          9,
+          20,
+          "road"
+        ]
+      ]
+    },
+    {
+      "position": [
+        0,
+        0
+      ],
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 10000,
+      "pixelZones": [
+        [
+          143,
+          82,
+          52,
+          30
+        ]
+      ],
+      "interiorSize": [
+        5,
+        5
+      ]
     }
   ],
   "shopSlots": [
     {
       "position": [
-        5,
-        7
+        0,
+        0
       ],
-      "polyominoId": "dom_I",
-      "cells": [
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 0,
+      "pixelZones": [
         [
-          0,
-          0
-        ],
-        [
-          1,
-          0
+          85,
+          132,
+          46,
+          38
         ]
       ],
-      "cost": 0
+      "interiorSize": [
+        5,
+        5
+      ],
+      "truckStop": [
+        6,
+        11
+      ],
+      "shopConfig": {
+        "name": "Hammer & Sons",
+        "color": 10066329,
+        "description": "Hardware and tools for every project",
+        "priceModifier": 1,
+        "acceptedItems": ["bolt", "nails", "beam", "rope", "pipe", "gear", "cable", "wooden_frame", "hammer", "saw", "shovel", "light_bulb"],
+        "itemPriceModifiers": {
+          "bolt": 1.2,
+          "nails": 1.2,
+          "beam": 1.1,
+          "rope": 1.2,
+          "pipe": 1.3,
+          "gear": 1.3,
+          "cable": 1.3,
+          "wooden_frame": 1.4,
+          "hammer": 1.5,
+          "saw": 1.5,
+          "shovel": 1.5,
+          "light_bulb": 1.4
+        }
+      }
     },
     {
       "position": [
+        0,
+        0
+      ],
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 0,
+      "pixelZones": [
+        [
+          80,
+          80,
+          36,
+          32
+        ]
+      ],
+      "interiorSize": [
         5,
-        4
+        5
       ],
-      "polyominoId": "dom_I",
-      "cells": [
-        [
-          0,
-          0
-        ],
-        [
-          1,
-          0
-        ]
-      ],
-      "cost": 0
-    },
-    {
-      "position": [
-        2,
-        3
-      ],
-      "polyominoId": "custom_5",
-      "cells": [
-        [
-          1,
-          0
-        ],
-        [
-          0,
-          0
-        ],
-        [
-          0,
-          1
-        ],
-        [
-          0,
-          2
-        ],
-        [
-          1,
-          2
-        ]
-      ],
-      "cost": 0
+      "shopConfig": {
+        "name": "Bramfeld Supply",
+        "color": 5526612,
+        "description": "Quality materials for builders and crafters",
+        "priceModifier": 1,
+        "acceptedItems": ["plank", "stone_brick", "iron_bar", "copper_bar", "glass", "sand", "paper", "iron_plate", "copper_plate", "copper_wire", "string", "cloth", "glue"],
+        "itemPriceModifiers": {
+          "plank": 1.1,
+          "stone_brick": 1.1,
+          "iron_bar": 1.1,
+          "copper_bar": 1.1,
+          "glass": 1.2,
+          "sand": 1.0,
+          "paper": 1.2,
+          "iron_plate": 1.2,
+          "copper_plate": 1.2,
+          "copper_wire": 1.2,
+          "string": 1.1,
+          "cloth": 1.2,
+          "glue": 1.3
+        }
+      }
     }
   ],
   "storageSlots": [
     {
       "position": [
-        9,
-        2
+        0,
+        0
       ],
-      "polyominoId": "custom_2",
-      "cells": [
+      "bounds": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cost": 100,
+      "pixelZones": [
         [
-          0,
-          0
-        ],
-        [
-          1,
-          0
+          160,
+          25,
+          32,
+          33
         ]
       ],
-      "cost": 75
+      "interiorSize": [
+        5,
+        5
+      ],
+      "truckStop": [
+        11,
+        4
+      ]
     }
   ],
-  "decorations": [
-    {
-      "type": "house",
-      "position": [
-        2,
-        6
-      ],
-      "polyominoId": "custom_2",
-      "cells": [
-        [
-          0,
-          0
-        ],
-        [
-          1,
-          0
-        ]
-      ],
-      "name": "House",
-      "color": "0x356840"
-    },
-    {
-      "type": "house",
-      "position": [
-        10,
-        7
-      ],
-      "polyominoId": "custom_3",
-      "cells": [
-        [
-          1,
-          0
-        ],
-        [
-          0,
-          0
-        ],
-        [
-          0,
-          1
-        ]
-      ],
-      "name": "House",
-      "color": "0x356840"
-    },
-    {
-      "type": "house",
-      "position": [
-        9,
-        4
-      ],
-      "polyominoId": "custom_4",
-      "cells": [
-        [
-          0,
-          1
-        ],
-        [
-          0,
-          0
-        ],
-        [
-          1,
-          0
-        ],
-        [
-          2,
-          0
-        ]
-      ],
-      "name": "House",
-      "color": "0x356840"
-    },
-    {
-      "type": "house",
-      "position": [
-        4,
-        2
-      ],
-      "polyominoId": "custom_3",
-      "cells": [
-        [
-          0,
-          0
-        ],
-        [
-          1,
-          0
-        ],
-        [
-          2,
-          0
-        ]
-      ],
-      "name": "House",
-      "color": "0x356840"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        4,
-        1
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x207c2b"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        6,
-        9
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x1ba690"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        1,
-        6
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x23b543"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        2,
-        1
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x1dc96f"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        2,
-        2
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x21ed7b"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        9,
-        1
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x2b0ca0"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        13,
-        6
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x2ccb1d"
-    },
-    {
-      "type": "decoration",
-      "position": [
-        11,
-        8
-      ],
-      "polyominoId": "mono_1",
-      "cells": [
-        [
-          0,
-          0
-        ]
-      ],
-      "name": "Tree",
-      "color": "0x2be276"
-    },
-    {
-      "type": "house",
-      "position": [
-        5,
-        4
-      ],
-      "polyominoId": "custom_4",
-      "cells": [
-        [
-          0,
-          1
-        ],
-        [
-          1,
-          1
-        ],
-        [
-          2,
-          1
-        ],
-        [
-          2,
-          0
-        ]
-      ],
-      "name": "House",
-      "color": "0x356840"
-    }
+  "cameraBounds": [
+    -64,
+    -64,
+    1096,
+    1096
+  ],
+  "zoomLimits": [
+    1,
+    5
   ]
 }

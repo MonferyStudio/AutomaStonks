@@ -6,7 +6,10 @@
       "Bash(node -e \":*)",
       "Bash(npx tsx -e \":*)",
       "Bash(python3 -c \"from PIL import Image; img = Image.open\\(''c:/Users/Greem/automation/public/sprites/shop_spritesheet.png''\\); print\\(f''Size: {img.size}, Cols: {img.size[0]//32}, Rows: {img.size[1]//32}''\\)\")",
-      "Bash(find /c/Users/Greem/automation -type f -name \"*.ts\" -not -path \"*/node_modules/*\" -exec wc -l {} +)"
+      "Bash(find /c/Users/Greem/automation -type f -name \"*.ts\" -not -path \"*/node_modules/*\" -exec wc -l {} +)",
+      "Bash(mv belt_straight.png belt_curve.png belt_entry.png belt_exit.png wall_cell.png background_cell.png factory/)",
+      "Bash(mv road_straight.png road_curve.png road_crossroad.png road_tjunction.png road_deadend.png factory_spritesheet.png house_spritesheet.png shop_spritesheet.png storage_spritesheet.png city/)",
+      "Bash(ls -la c:/Users/Greem/automation/src/*/*.ts)"
     ]
   }
 }
